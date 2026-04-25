@@ -1,5 +1,7 @@
 from graphics import *
 
+'test'
+
 class Button:
     
     def __init__(self, p1: Point, p2: Point, text_string: str, action=None, shape='rectangle',
