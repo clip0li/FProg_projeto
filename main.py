@@ -8,12 +8,32 @@ def main():
 
     match slct_win.select():
         case '1':
-            pass
+            dialog = InputDialog(200, 300, ('Velocity', 'Angle', 'Height'))
+            values = dialog.getValues()
+            
+            if values == None:
+                main()
+            
+            
+            vel, angle, height, = values
+            
+            sim = Simulation('1')
+            
+            ball = Ball(Point(1, height))
+            ball.setAcl(Point(0,-9.8))
+            sim.addObject(ball)
+            
+            hoop = Hoop(Point(12,4), 1, 0.1)
+            sim.addObject(hoop)
+            
+            ball.launch(vel, angle)
+            
                     
         case '2':
-            input_dialog = InputDialog(200, 300, ('Velocity', 'Angle', 'Height'))
-            
-        case '3': print(3)
+            pass
+    
+        case '3':
+            pass
         
         case '4':
             scenary4 = Simulation('Cenário 2')

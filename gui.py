@@ -1,6 +1,11 @@
-from graphics import *
+'''
+File responsible of GUI classes of program
+Contains: Button, InputDialog, SelectionWindow
 
-'test'
+'''
+
+
+from graphics import *
 
 class Button:
     
@@ -44,6 +49,11 @@ class Button:
     def setTextColor(self, color):
         self.text.setTextColor(color)
         self.text_color = color
+        
+        
+    def setBackgroundColor(self, color):
+        self.body.setFill(color)
+        self.background_color = color
 
         
     def setAction(self, action):
@@ -63,7 +73,8 @@ class Button:
 
                 if self.action != None:
                     self.action()
-                    return True      
+                    
+                return True      
             
         elif self.shape == 'oval':
             center = self.body.getCenter()
@@ -84,68 +95,77 @@ class Button:
 
 
 class InputDialog(GraphWin):
-    
-    def btn_quit_action(self):
-        self.close()
-
-        
-    def __init__(self, width, height, inputs = ()):
+    def __init__(self, width, height, inputs=()):
         self.width = width
         self.height = height
         self.inputs = inputs
         self.entries = []
         self.entries_width = 5
         
-        GraphWin.__init__(self, '', width, height)
+        GraphWin.__init__(self, 'Insert values', width, height)
         
         step = self.height / (len(self.inputs) + 2)
         
-        for inp in self.inputs:
-            i = self.inputs.index(inp)
-            
-            text = Text(Point(self.width / 3, (i+1) * step), f'{inp}: ')
+        for i, inp in enumerate(self.inputs):
+           
+            text = Text(Point(self.width / 3, (i + 1) * step), f'{inp}: ')
             text.setStyle('bold')
-            text.setFace('arial')
-            text.setSize(15)
+            text.setSize(14)
             text.draw(self)
             
-            entry = Entry(Point( 2 * self.width / 3, (i+1) * step), self.entries_width)
+            
+            entry = Entry(Point(2 * self.width / 3, (i + 1) * step), self.entries_width)
+            entry.setFill('white')
+            entry.setText("0") 
             self.entries.append(entry)
             entry.draw(self)
             
-        btn_quit_center = Point(self.width / 3 ,(len(self.entries) + 1) * step)
-        w = self.width / 6
-        btn_quit = Button(Point(btn_quit_center.getX() - w, btn_quit_center.getY() - 0.5 * w),
-                          Point(btn_quit_center.getX() + w, btn_quit_center.getY() + 0.5 * w), 'QUIT',
-                          action = self.btn_quit_action)
-        btn_quit.draw(self)
+        w = self.width / 7
+        btn_y = (len(self.entries) + 1) * step
         
+        self.btn_quit = Button(Point(self.width / 3 - w, btn_y - 0.5 * w),
+                              Point(self.width / 3 + w, btn_y + 0.5 * w), 'QUIT')
+        self.btn_quit.draw(self)
+        
+        
+        self.btn_run = Button(Point(2 * self.width / 3 - w, btn_y - 0.5 * w),
+                             Point(2 * self.width / 3 + w, btn_y + 0.5 * w), 'RUN',
+                             background_color='crimson', text_color='white')
+        self.btn_run.draw(self)
+        
+        
+    def getValues(self):
         while self.isOpen():
             mouse = self.checkMouse()
             if mouse != None:
-                btn_quit.is_clicked(mouse)
         
-        
-        
-    
-        
-    def getInput(self):
+                if self.btn_quit.is_clicked(mouse):
+                    self.close()
+                    return None
+                
+                if self.btn_run.is_clicked(mouse):
+                    
+                    data = self.processInput()
+                    
+                    if data != None and data != []:
+                        self.close()
+                        return data
+
+    def processInput(self):
         values = []
         
         for entry in self.entries:
+            val = entry.getText().replace(',', '.')
             
-            if entry.getText() == '' or not entry.getText().isnumeric():
-                return
+            if val.isnumeric():
+                val = float(val)
+            else:
+                return None
             
-            values.append(entry.getText())
-        
+            if val >= 0:
+                values.append(val)
+            
         return values
-    
-
-        
-
-
-
 
 
 # -----------------------------------------------------------------------------------------------------------------        

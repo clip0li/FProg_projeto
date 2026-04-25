@@ -80,6 +80,7 @@ class Ball:
     def getSize(self):
         return self.size
     
+    
     def setAcl(self, acl):
         self.acl = acl
 
