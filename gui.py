@@ -68,8 +68,8 @@ class Button:
         if pos == None: return False
         if self.shape == 'rectangle':
             
-            if min(self.p1.x, self.p2.x) <= pos.getX() <= max(self.p1.x, self.p2.x) and \
-               min(self.p1.y, self.p2.y) <= pos.getY() <= max(self.p1.y, self.p2.y):
+            if min(self.p1.getX(), self.p2.getX()) <= pos.getX() <= max(self.p1.getX(), self.p2.getX()) and \
+               min(self.p1.getY(), self.p2.getY()) <= pos.getY() <= max(self.p1.getY(), self.p2.getY()):
 
                 if self.action != None:
                     self.action()

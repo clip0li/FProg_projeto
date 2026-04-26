@@ -2,6 +2,52 @@ from graphics import *
 from gui import *
 import numpy as np
 
+class Ball:
+    def __init__(self, pos0: Point, size=0.2, color='brown3'):
+        self.pos = pos0
+        self.size = size
+        self.vel = Point(0, 0)
+        self.acl = Point(0, 0)
+        self.color = color
+        self.body = None  
+    
+    def getPos(self):
+        return self.pos
+    
+    def getVel(self):
+        return self.vel
+    
+    def getAcl(self):
+        return self.acl
+    
+    def getSize(self):
+        return self.size
+    
+    def draw(self, window: GraphWin):
+        self.body = Circle(self.pos, self.size)
+        self.body.setFill(self.color)
+        self.body.setOutline(self.color)
+        self.body.draw(window)
+        
+
+    def step(self, dt):
+        vx = self.vel.getX() + self.acl.getX() * dt
+        vy = self.vel.getY() + self.acl.getY() * dt
+        self.vel = Point(vx, vy)
+        
+        dx = vx * dt
+        dy = vy * dt
+        self.body.move(dx, dy)
+        self.pos = Point(self.pos.getX() + dx, self.pos.getY() + dy)
+        
+
+    def moveTo(self, point: Point):
+        self.body.move(point.getX() - self.pos.getX(), point.getY() - self.pos.getY())
+        self.pos = point
+        
+        
+# ------------------------------------------------------------------------
+
 class Parabola:
     def __init__(self, pos:Point, curvature, width):
         self.pos = pos
@@ -24,11 +70,16 @@ class Parabola:
             line.draw(window)
             
             previous_point = point
-            
+        
         
     def equationGetY(self, x):
         return self.curvature * (x - self.pos.getX()) ** 2 + self.pos.getY()
-        
+    
+    def equationGetDerivative(self, x):
+        return 2 * self.curvature * (x - self.pos.getX())
+    
+    def placeBall(self, ball: Ball, height):
+        pass
 
     def distanceTo(self, point):
         x, y = point.getX(), point.getY()
@@ -62,78 +113,7 @@ class Parabola:
         
 # ------------------------------------------------------------------------
 
-class Ball:
-    def __init__(self, pos0: Point, size=0.2, color='brown3', ball = None,):
-        self.pos = pos0
-        self.size = size
-        self.vel = Point(0,0)
-        self.acl = Point(0,0)
-        self.mass = 1
-        self.color = color
-        self.ball = ball
-        
-        
-    def getPos(self):
-        return self.pos
-    
-    
-    def getSize(self):
-        return self.size
-    
-    
-    def setAcl(self, acl):
-        self.acl = acl
 
-        
-    def draw(self, window: GraphWin):
-        self.ball = Circle(self.pos, self.size)
-        self.ball.setFill(self.color)
-        self.ball.setWidth(0)
-        self.ball.draw(window)
-        
-        
-    def step(self, dt):
-        velx_new = self.vel.getX() + self.acl.getX() * dt
-        vely_new = self.vel.getY() + self.acl.getY() * dt
-        self.vel = Point(velx_new, vely_new)
-        
-        dx = self.vel.getX() * dt
-        dy = self.vel.getY() * dt
-        self.ball.move(dx, dy)
-        
-        self.pos = Point(self.pos.getX() + dx, self.pos.getY() + dy)
-        
-
-    def launch(self, vel, angle):
-        velx = vel * np.cos(angle * np.pi / 180)
-        vely = vel * np.sin(angle * np.pi / 180)
-        self.vel = Point(velx, vely)
-        
-        while self.getPos().getY() - self.getSize() > 0:
-            self.step(1 / 60) 
-            update(60)
-            
-
-    
-    def step(self, dt):
-        vx = self.vel.getX() + self.acl.getX() * dt
-        vy = self.vel.getY() + self.acl.getY() * dt
-        self.vel = Point(vx, vy)
-        
-        new_x = self.pos.getX() + vx * dt
-        new_y = self.pos.getY() + vy * dt
-        
-        dx = new_x - self.pos.getX()
-        dy = new_y - self.pos.getY()
-        self.ball.move(dx, dy)
-        self.pos = Point(new_x, new_y)
-
-    def moveTo(self, point: Point):
-        self.ball.move(point.getX() - self.pos.getX(), point.getY() - self.pos.getY())
-        self.pos = point
-        
-        
-# ------------------------------------------------------------------------
 
 class Hoop:
     def __init__(self, pos: Point, width, size):
@@ -141,9 +121,10 @@ class Hoop:
         self.width = width
         self.size = size
         
+        
     def draw(self, window: GraphWin):
-        w1 = self.pos.getX()  - self.width / 2 - self.size
-        w2 = self.pos.getX()  + self.width / 2 + self.size
+        w1 = self.pos.getX() - self.width / 2 - self.size
+        w2 = self.pos.getX() + self.width / 2 + self.size
         
         circle1 = Circle(Point(w1, self.pos.getY()), self.size)
         circle1.setFill('powderblue')
@@ -160,13 +141,23 @@ class Hoop:
         
         line2 = Line(Point(w1, self.pos.getY() - self.size), Point(w2, self.pos.getY() - self.size))
         line2.draw(window)
+        
+    def is_scored(self, pos: Point):
+        p1 = Point(self.pos.getX() - self.width / 2, self.pos.getY() + self.size)
+        p2 = Point(self.pos.getX() + self.width / 2, self.pos.getY() - self.size)
+        
+        if min(p1.getX(), p2.getX()) <= pos.getX() <= max(p1.getX(), p2.getX()) and \
+               min(p1.getY(), p2.getY()) <= pos.getY() <= max(p1.getY(), p2.getY()):
+            return True
+        
+        return False
 
 
 # ------------------------------------------------------------------------
 
 
 class Counter:
-    def __init__(self,pos, text_str, count=0):
+    def __init__(self,pos, text_str='Score', count=0):
         self.pos = pos
         self.text_str = text_str
         self.text = None
@@ -177,99 +168,111 @@ class Counter:
         self.text = Text(self.pos, f'{self.text_str}: {self.count}')
         self.text.setStyle('bold')
         self.text.setFace('arial')
+        self.text.setSize(20)
         self.text.draw(window)
         
     def change(self, i=1):
         self.count += i
         self.text.setText(f'{self.text_str}: {self.count}')
         
-
         
+
+class Stickman:
+    def __init__(self, pos: Point, height):
+        self.pos = pos
+        self.height = height
+        
+    def draw(self, window: GraphWin):
+        x = self.pos.getX()
+        y = self.pos.getY()
+        h = self.height
+        head = Circle(Point(x, y + h * 0.85), h * 0.15)
+        head.setWidth(2)
+        head.draw(window)
+        
+        body = Line(Point(x, y + h * 0.3), Point(x, y + h * 0.7))
+        body.setWidth(2)
+        body.draw(window)
+        
+        left_leg = Line(Point(x, y + h * 0.3), Point(x - 0.2, y))
+        left_leg.setWidth(2)
+        left_leg.draw(window)
+        
+        right_leg = Line(Point(x, y + h * 0.3), Point(x + 0.2, y))
+        right_leg.setWidth(2)
+        right_leg.draw(window)
+        
+        left_arm = Line(Point(x, y + h * 0.6), Point(x - 0.2, y + h * 0.3))
+        left_arm.setWidth(2)
+        left_arm.draw(window)
+        
+        right_arm = Line(Point(x, y + h * 0.6), Point(x + 0.2, y + h * 0.3))
+        right_arm.setWidth(2)
+        right_arm.draw(window)
     
 
-# ------------------------------------------------------------------------
-
-
-class Simulation(GraphWin):
-    def __init__(self, name):
-        GraphWin.__init__(self, name, 1280, 720, autoflush = False)
-        self.setCoords(0, 0, 16, 9)
-        self.setBackground('white')
+# ------------------------------------------------------------------------ 
+    
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
+
+    
+class Simulation(GraphWin):
+    def __init__(self, title: str, width=1280, height=720):
+        GraphWin.__init__(self, title, width, height, autoflush=False)
+        self.setCoords(0, 0, 16, 9) 
         self.objects = []
         
-        self.quit_button = Button(Point(0.25, 8.75), Point(1, 8.25), 'QUIT', action=lambda: self.close())
-        self.quit_button.draw(self)
-        
+        self.setBackground('white')
+        self.btn_quit = Button(Point(0.25, 8.75), Point(1, 8.25), 'QUIT', action=lambda: self.close())
+        self.btn_quit.draw(self)    
+
     def addObject(self, obj):
         self.objects.append(obj)
         obj.draw(self)
-                
-    def getObjects(self):
-            return self.objects
-    
-    def checkQuitButton(self, mouse):
-        self.quit_button.is_clicked(mouse)
         
-    
-    
-    
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
-    
+
+    def checkQuitButton(self, mouse):
+        self.btn_quit.is_clicked(mouse)
+        
+
     def run_step(self, dt):
         balls = [obj for obj in self.objects if isinstance(obj, Ball)]
         parabolas = [obj for obj in self.objects if isinstance(obj, Parabola)]
         
         for ball in balls:
-            ball.setAcl(Point(0, -9.8)) 
+            ball.acl = Point(0, -9.8) # Гравітація
             ball.step(dt)
             
             for parabola in parabolas:
                 dist, contact = parabola.distanceTo(ball.pos)
-                
-                # РІШЕННЯ ПРОБЛЕМИ "ПРОВАЛЮВАННЯ":
-                # Перевіряємо дві умови: 
-                # 1. Математична відстань менша за радіус.
-                # 2. Центр м'яча знаходиться нижче лінії параболи (для чаші).
-                
                 surface_y = parabola.equationGetY(ball.pos.getX())
                 
-                # Якщо м'яч торкається АБО вже встиг зайти за межу
-                if dist < ball.size or ball.pos.getY() < surface_y + ball.size:
-                    self.resolve_collision(ball, parabola, contact, dist)
-                
-        # Оновлюємо вікно один раз після прорахунку всіх об'єктів
-        update(1 / dt)
-
-    def resolve_collision(self, ball, parabola, contact_point, dist):
-        # 1. Визначаємо, чи м'яч знаходиться "під" параболою
-        # Для y = a(x-e)^2 + d, м'яч "всередині" (над чашею), якщо y > equationGetY(x)
-        is_inside = ball.pos.getY() > parabola.equationGetY(ball.pos.getX())
+                # Колізія: якщо відстань менша за радіус АБО центр під параболою
+                if dist < ball.size or ball.pos.getY() < surface_y:
+                    self.resolve_collision(ball, parabola, contact)
+        update(1/dt)
         
-        # Якщо м'яч випав знизу (is_inside = False для чаші), нам треба його ігнорувати 
-        # або повернути назад. Але зазвичай м'яч падає ЗВЕРХУ.
-        
-        # bormal vector from contact point to ball
-        nx = ball.pos.getX() - contact_point.getX()
-        ny = ball.pos.getY() - contact_point.getY()
-        magnitude = np.sqrt(nx**2 + ny**2)
-        # if current_dist == 0: return 
-        nx /= magnitude
-        ny /= magnitude
 
-        if ny < 0:
-            ny = -ny # correction if ball is under of parabola
+    def resolve_collision(self, ball, parabola, contact):
+        nx = ball.pos.getX() - contact.getX()
+        ny = ball.pos.getY() - contact.getY()
+        dist = np.sqrt(nx**2 + ny**2)
         
-        # position correction
-        ball.moveTo(Point(contact_point.getX() + nx * ball.size, contact_point.getY() + ny * ball.size))
+        if dist == 0: return
+        nx, ny = nx/dist, ny/dist
 
-        # 4. Відскок
+        # Гарантуємо виштовхування вгору для "чаші"
+        if ny < 0 and parabola.curvature > 0:
+            ny = -ny
+
+        # Корекція позиції
+        ball.moveTo(Point(contact.getX() + nx * ball.size, contact.getY() + ny * ball.size))
+
+        # Відскок
         v_dot_n = ball.vel.getX() * nx + ball.vel.getY() * ny
-        
-        # Відбиваємо тільки якщо м'яч рухається НАЗУСТРІЧ поверхні
         if v_dot_n < 0:
-            elasticity = np.sqrt(1) # Втрата енергії
+            elasticity = 0.8
             new_vx = (ball.vel.getX() - 2 * v_dot_n * nx) * elasticity
             new_vy = (ball.vel.getY() - 2 * v_dot_n * ny) * elasticity
             ball.vel = Point(new_vx, new_vy)
