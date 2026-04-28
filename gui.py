@@ -157,9 +157,9 @@ class InputDialog(GraphWin):
         for entry in self.entries:
             val = entry.getText().replace(',', '.')
             
-            if val.isnumeric():
+            try:
                 val = float(val)
-            else:
+            except:
                 return None
             
             if val >= 0:

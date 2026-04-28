@@ -35,13 +35,15 @@ def main():
                 
                 ball = Ball(Point(3, height))
                 ball.draw(scenary1)
-                ball.moveTo(Point(ball.getPos().getX(), ball.getPos().getY() + ball.getSize()))
+                ball.setPos(Point(ball.getPos().getX(), ball.getPos().getY() + ball.getSize()))
                 
                 vx = vel * np.cos(np.radians(angle))
                 vy = vel * np.sin(np.radians(angle))
-                ball.vel = Point(vx, vy)
-                ball.acl = Point(0, -9.8)
-
+                ball.setVel(Point(vx, vy))
+                ball.setAcl(Point(0, -9.8))
+                
+                scored = False
+                
                 while scenary1.isOpen():
                     mouse = scenary1.checkMouse()
                     
@@ -58,10 +60,13 @@ def main():
                     if mouse != None:
                         scenary1.checkQuitButton(mouse)
                         
-                    if hoop.is_scored(ball.getPos()):
-                        counter.change(1)
-                        score += 1
-            
+                    if hoop.is_scored(ball.getPos()) and not scored:
+                        counter.change(2)
+                        score += 2
+                        scored = True
+                
+                scored = False
+                
             main()    
                 
                     
@@ -79,54 +84,52 @@ def main():
                 scenary2 = Simulation('Cenário 2')
                 scenary2.setCoords(0, 0, 16, 9)
 
-                parabola = Parabola(Point(8, 1), 0.25, 10)
+                parabola = Parabola(Point(8, 1), 0.25, 15)
                 parabola.draw(scenary2)
                 
-                ball = Ball(Point(0, 0))
-                ball.draw(scenary2)
-                ball.moveTo(parabola.placeBall(ball, height))
+                y = height + parabola.getPos().getY()
+                x = parabola.equationGetX(height) + parabola.getPos().getX()
                 
+                
+                ball = Ball(Point(x, y))
+                ball.draw(scenary2)
+                ball.setAcl(Point(0, -9.8))
 
                 while scenary2.isOpen():
                     mouse = scenary2.checkMouse()
                     
-                    if True:
-                        #ball.step(1/60)
-                        #update(60)
-                        pass
-                    else:
-                        if mouse != None:
-                            scenary2.close()
-                            break
+                    dt = 1/60
+
+                    collision_point, distance = parabola.distanceTo(ball.getPos())
                         
+                    if distance <= ball.getSize():
+                        parabola.checkCollision(ball, collision_point,
+                                                friction=0.2,
+                                                bounciness=0,
+                                                dt = dt)
+                    ball.step(dt)   
+                    update(1 / dt)
+                    
                     if mouse != None:
                         scenary2.checkQuitButton(mouse)
                         
-                    
-            
+                        '''
+                        if parabola.equationGetY(mouse.getX()) < mouse.getY():
+                            ball.setPos(mouse)
+                            ball.setVel(Point(0, 0))
+                            ball.setAcl(Point(0,-9.8))
+                        '''
+                        
             main()
     
         case '3':
             pass
         
         case '4':
-            scenary4 = Simulation('Cenário 2')
-            parabola = Parabola(Point(8, 1), 0.25, 10)
-            scenary4.addObject(parabola)
-    
-            while scenary4.isOpen():
-                
-                mouse = scenary4.checkMouse()
-                if mouse:
-                    scenary4.checkQuitButton(mouse)
-                    
-                    ball = Ball(mouse)
-                    scenary4.addObject(ball)
-                
-                scenary4.run_step(1/60)
+            pass
                 
                 
-def randomize(value, percentage = 0):
+def randomize(value, percentage = 0.15):
     return value + random.uniform(- value * percentage, value * percentage)
      
      

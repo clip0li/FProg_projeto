@@ -23,12 +23,21 @@ class Ball:
     def getSize(self):
         return self.size
     
+    def setPos(self, point: Point):
+        self.body.move(point.getX() - self.pos.getX(), point.getY() - self.pos.getY())
+        self.pos = point
+    
+    def setVel(self, vel: Point):
+        self.vel = vel
+    
+    def setAcl(self, acl: Point):
+        self.acl = acl
+
     def draw(self, window: GraphWin):
         self.body = Circle(self.pos, self.size)
         self.body.setFill(self.color)
         self.body.setOutline(self.color)
         self.body.draw(window)
-        
 
     def step(self, dt):
         vx = self.vel.getX() + self.acl.getX() * dt
@@ -40,19 +49,20 @@ class Ball:
         self.body.move(dx, dy)
         self.pos = Point(self.pos.getX() + dx, self.pos.getY() + dy)
         
-
-    def moveTo(self, point: Point):
-        self.body.move(point.getX() - self.pos.getX(), point.getY() - self.pos.getY())
-        self.pos = point
         
         
 # ------------------------------------------------------------------------
+
+
 
 class Parabola:
     def __init__(self, pos:Point, curvature, width):
         self.pos = pos
         self.curvature = curvature
         self.width = width
+        
+    def getPos(self):
+        return self.pos
         
     def draw(self, window: GraphWin, lines = 100):
         x0 = self.pos.getX() - self.width / 2
@@ -75,41 +85,111 @@ class Parabola:
     def equationGetY(self, x):
         return self.curvature * (x - self.pos.getX()) ** 2 + self.pos.getY()
     
-    def equationGetDerivative(self, x):
-        return 2 * self.curvature * (x - self.pos.getX())
+    # returns only values on left and is relative to vertice of parabola
+    def equationGetX(self, y):
+        return - np.sqrt(y / self.curvature)
     
-    def placeBall(self, ball: Ball, height):
-        pass
-
     def distanceTo(self, point):
-        x, y = point.getX(), point.getY()
-        xp, yp = self.pos.getX(), self.pos.getY()
-        a = self.curvature
+        px = point.getX()
+        py = point.getY()
         
-        # u = x - e
-        coeffs = [
-            2 * a ** 2,             # u^3
-            0,                      # u^2
-            2 * a * (yp - y) + 1,   # u^1
-            xp - x                  # u^0
-        ]
+        a = self.curvature
+        x0 = self.pos.getX()
+        y0 = self.pos.getY()
+        
+        dx = px - x0
+        dy = py - y0
+        
+        # coefficients of polinomial of 3rd degree
+        coeffs = [2*a**2, 0, 1 - 2*a*dy, -dx]
         
         # roots of polynomial with those coeffs
         roots = np.roots(coeffs)
         
         # choosing only real roots
-        real_u = roots[np.isreal(roots)].real
+        real_roots = [r.real for r in roots ] # if abs(r.imag) < 1e-9
 
-        # collision point
-        x1 = real_u + xp
-        y1 = a * real_u**2 + yp
+        collision_point = None
+        best_distance = float('inf') # infinity if point is not finded
         
-        distances = np.sqrt((x - x1)**2 + (y - y1)**2)
-        
-        # index of minimum distance
-        index = np.argmin(distances)
+        for k in real_roots:
+            x = k + x0
+            y = a * k**2 + y0
+            
+            dist = np.sqrt((x - px)**2 + (y - py)**2)
+            
+            if dist < best_distance:
+                best_distance = dist
+                collision_point = Point(x, y)
 
-        return distances[index], Point(x1[index], y1[index])
+        return collision_point, best_distance
+        
+    def checkCollision(self, ball: Ball, collision_point: Point, bounciness, friction, dt):
+        friction *= dt
+        # normal vector
+        normalx = ball.pos.getX() -  collision_point.getX()
+        normaly = ball.pos.getY() -  collision_point.getY()
+        
+        # distance from collision point to ball 
+        distance = np.sqrt(normalx**2 + normaly**2)
+        if distance == 0: return 
+        
+        # normalize
+        normalx /= distance
+        normaly /= distance
+        
+        # fix direction
+        if normaly < 0:
+            normalx = -normalx
+            normaly = -normaly 
+        
+        # tangent vector
+        tangentx = normaly
+        tangenty = -normalx
+        
+        # fix direction
+        if tangenty > 0:
+            tangentx = -tangentx
+            tangenty = -tangenty
+        
+        # correct position
+        x = collision_point.getX() + normalx * ball.getSize()
+        y = collision_point.getY() + normaly * ball.getSize()
+        ball.setPos(Point(x, y))
+        
+        # curent velocity
+        vx = ball.getVel().getX()
+        vy = ball.getVel().getY()
+        
+        v_normal = vx * normalx + vy * normaly    # projection of velocity on normal unit vector
+        v_tangent = vx * tangentx + vy * tangenty # projection of velocity on tangent unit vector
+        
+        # current acceleration
+        ax = ball.getAcl().getX()
+        ay = ball.getAcl().getY()
+        
+        # fix direction
+        if ay > 0:
+            ax = -ax
+            ay = -ay
+        
+        a_tangent = ax * tangentx + ay * tangenty 
+        
+        # new velocity with normal and tangent components
+        v_tangent_new = (v_tangent + a_tangent * dt) * (1 - friction)
+        v_normal_new = -v_normal * bounciness if v_normal < 0 else v_normal
+        
+        # new velocity with x and y components
+        new_vx = v_tangent_new * tangentx + v_normal_new * normalx
+        new_vy = v_tangent_new * tangenty + v_normal_new * normaly
+        
+        # set new velocity
+        ball.setVel(Point(new_vx, new_vy))
+        
+        # debugging
+        
+        #print('Velocity: ', new_vx, new_vy)
+        #print('Acceleration: ', ax, ay, '\n')
         
 # ------------------------------------------------------------------------
 
@@ -119,8 +199,7 @@ class Hoop:
     def __init__(self, pos: Point, width, size):
         self.pos = pos
         self.width = width
-        self.size = size
-        
+        self.size = size 
         
     def draw(self, window: GraphWin):
         w1 = self.pos.getX() - self.width / 2 - self.size
@@ -153,7 +232,9 @@ class Hoop:
         return False
 
 
+
 # ------------------------------------------------------------------------
+
 
 
 class Counter:
@@ -162,7 +243,6 @@ class Counter:
         self.text_str = text_str
         self.text = None
         self.count = count
-        
         
     def draw(self, window):
         self.text = Text(self.pos, f'{self.text_str}: {self.count}')
@@ -211,10 +291,9 @@ class Stickman:
         right_arm.draw(window)
     
 
+
 # ------------------------------------------------------------------------ 
-    
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        
+            
 
     
 class Simulation(GraphWin):
@@ -231,51 +310,9 @@ class Simulation(GraphWin):
         self.objects.append(obj)
         obj.draw(self)
         
-
     def checkQuitButton(self, mouse):
         self.btn_quit.is_clicked(mouse)
         
-
-    def run_step(self, dt):
-        balls = [obj for obj in self.objects if isinstance(obj, Ball)]
-        parabolas = [obj for obj in self.objects if isinstance(obj, Parabola)]
-        
-        for ball in balls:
-            ball.acl = Point(0, -9.8) # Гравітація
-            ball.step(dt)
-            
-            for parabola in parabolas:
-                dist, contact = parabola.distanceTo(ball.pos)
-                surface_y = parabola.equationGetY(ball.pos.getX())
-                
-                # Колізія: якщо відстань менша за радіус АБО центр під параболою
-                if dist < ball.size or ball.pos.getY() < surface_y:
-                    self.resolve_collision(ball, parabola, contact)
-        update(1/dt)
-        
-
-    def resolve_collision(self, ball, parabola, contact):
-        nx = ball.pos.getX() - contact.getX()
-        ny = ball.pos.getY() - contact.getY()
-        dist = np.sqrt(nx**2 + ny**2)
-        
-        if dist == 0: return
-        nx, ny = nx/dist, ny/dist
-
-        # Гарантуємо виштовхування вгору для "чаші"
-        if ny < 0 and parabola.curvature > 0:
-            ny = -ny
-
-        # Корекція позиції
-        ball.moveTo(Point(contact.getX() + nx * ball.size, contact.getY() + ny * ball.size))
-
-        # Відскок
-        v_dot_n = ball.vel.getX() * nx + ball.vel.getY() * ny
-        if v_dot_n < 0:
-            elasticity = 0.8
-            new_vx = (ball.vel.getX() - 2 * v_dot_n * nx) * elasticity
-            new_vy = (ball.vel.getY() - 2 * v_dot_n * ny) * elasticity
-            ball.vel = Point(new_vx, new_vy)
         
         
 
