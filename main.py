@@ -24,7 +24,7 @@ def main():
                 scenary1 = Simulation('Cenário 1')
                 scenary1.setCoords(0, 0, 16, 9)
                 
-                counter = Counter(Point(15, 8.5), count=score)
+                counter = Counter(Point(15, 8.5), 'Score', score)
                 counter.draw(scenary1)
                 
                 hoop = Hoop(Point(14, 5), 1, 0.1)
@@ -104,7 +104,7 @@ def main():
                         
                     if distance <= ball.getSize():
                         parabola.checkCollision(ball, collision_point,
-                                                friction=0.2,
+                                                friction=0,
                                                 bounciness=0,
                                                 dt = dt)
                     ball.step(dt)   
@@ -113,12 +113,12 @@ def main():
                     if mouse != None:
                         scenary2.checkQuitButton(mouse)
                         
-                        '''
+                        
                         if parabola.equationGetY(mouse.getX()) < mouse.getY():
                             ball.setPos(mouse)
                             ball.setVel(Point(0, 0))
                             ball.setAcl(Point(0,-9.8))
-                        '''
+                        
                         
             main()
     
@@ -129,7 +129,7 @@ def main():
             pass
                 
                 
-def randomize(value, percentage = 0.15):
+def randomize(value, percentage = 0.0):
     return value + random.uniform(- value * percentage, value * percentage)
      
      

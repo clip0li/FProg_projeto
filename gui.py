@@ -1,9 +1,8 @@
 '''
+istxxxxxxx, istxxxxxxx
 File responsible of GUI classes of program
-Contains: Button, InputDialog, SelectionWindow
-
+Contains: Button, InputDialog, Counter, SelectionWindow
 '''
-
 
 from graphics import *
 
@@ -167,6 +166,29 @@ class InputDialog(GraphWin):
             
         return values
 
+
+class Counter:
+    
+    '''Displays text with number to count varibales such as score and lives'''
+    '''Arguments: position, text as string and initial value of variable'''
+    
+    def __init__(self, pos, text_str, value=0):
+        self.pos = pos
+        self.text_str = text_str
+        self.value = value
+        self.text = None
+        
+    def draw(self, window: GraphWin):
+        self.text = Text(self.pos, f'{self.text_str}: {self.value}')
+        self.text.setStyle('bold')
+        self.text.setFace('arial')
+        self.text.setSize(20)
+        self.text.draw(window)
+        
+    def change(self, i=1):
+        '''increments and decrements value by i'''
+        self.value += i
+        self.text.setText(f'{self.text_str}: {self.value}')
 
 # -----------------------------------------------------------------------------------------------------------------        
     

@@ -1,8 +1,18 @@
+'''
+istxxxxxxx, istxxxxxxx
+File responsoble of anything related to simulation process, calcualtions and
+Contains Ball, Parabola, Hoop, Simulation
+'''
+
 from graphics import *
 from gui import *
 import numpy as np
 
 class Ball:
+    
+    '''Creates ball(cirlcle projectile)'''
+    '''Properties: color, size, position, velocity, acceleration'''
+    
     def __init__(self, pos0: Point, size=0.2, color='brown3'):
         self.pos = pos0
         self.size = size
@@ -40,14 +50,27 @@ class Ball:
         self.body.draw(window)
 
     def step(self, dt):
-        vx = self.vel.getX() + self.acl.getX() * dt
-        vy = self.vel.getY() + self.acl.getY() * dt
-        self.vel = Point(vx, vy)
+        '''advance properties by time step st'''
+        '''sets position with x = v * dt formula and velocity with v = a * dt formlula'''
+        # current postion
+        x = self.pos.getX() 
+        y = self.pos.getY()
         
+        # current velocity
+        vx = self.vel.getX() 
+        vy = self.vel.getY() 
+        
+        # delta(change) of position 
         dx = vx * dt
         dy = vy * dt
+        
         self.body.move(dx, dy)
-        self.pos = Point(self.pos.getX() + dx, self.pos.getY() + dy)
+        self.pos = Point(x + dx, y + dy)
+        
+        # new velocity
+        new_vx = vx + self.acl.getX() * dt
+        new_vy = vy + self.acl.getY() * dt
+        self.vel = Point(new_vx, new_vy)
         
         
         
@@ -56,6 +79,9 @@ class Ball:
 
 
 class Parabola:
+    
+    '''Draws parabola from vertice position, curvature(a) and centered width'''
+    
     def __init__(self, pos:Point, curvature, width):
         self.pos = pos
         self.curvature = curvature
@@ -83,13 +109,18 @@ class Parabola:
         
         
     def equationGetY(self, x):
+        '''returns y (relative to window) of point of parabola with specific x'''
         return self.curvature * (x - self.pos.getX()) ** 2 + self.pos.getY()
     
-    # returns only values on left and is relative to vertice of parabola
     def equationGetX(self, y):
+        '''returns x (relative to vertice) of point of parabola with specific y'''
         return - np.sqrt(y / self.curvature)
     
     def distanceTo(self, point):
+        '''calculates distance from parabola in space to arbitrary point'''
+        '''does it by calculating normal to parabola that goes trough this point'''
+        '''uses deducted formula(in polynomial form) and filters all real roots. then finds nearst solution among them'''
+        '''returns point of intersection normal-parabola and distance'''
         px = point.getX()
         py = point.getY()
         
@@ -97,11 +128,11 @@ class Parabola:
         x0 = self.pos.getX()
         y0 = self.pos.getY()
         
-        dx = px - x0
-        dy = py - y0
+        nx = px - x0
+        ny = py - y0
         
         # coefficients of polinomial of 3rd degree
-        coeffs = [2*a**2, 0, 1 - 2*a*dy, -dx]
+        coeffs = [2*a**2, 0, 1 - 2*a*ny, -nx]
         
         # roots of polynomial with those coeffs
         roots = np.roots(coeffs)
@@ -109,7 +140,7 @@ class Parabola:
         # choosing only real roots
         real_roots = [r.real for r in roots ] # if abs(r.imag) < 1e-9
 
-        collision_point = None
+        contact_point = None
         best_distance = float('inf') # infinity if point is not finded
         
         for k in real_roots:
@@ -120,9 +151,9 @@ class Parabola:
             
             if dist < best_distance:
                 best_distance = dist
-                collision_point = Point(x, y)
+                contact_point = Point(x, y)
 
-        return collision_point, best_distance
+        return contact_point, best_distance
         
     def checkCollision(self, ball: Ball, collision_point: Point, bounciness, friction, dt):
         friction *= dt
@@ -196,6 +227,9 @@ class Parabola:
 
 
 class Hoop:
+    
+    '''Creates hoop represented as two circles and two lines between of them'''
+    
     def __init__(self, pos: Point, width, size):
         self.pos = pos
         self.width = width
@@ -222,6 +256,7 @@ class Hoop:
         line2.draw(window)
         
     def is_scored(self, pos: Point):
+        '''returns True if point is within rectangle between two circles'''
         p1 = Point(self.pos.getX() - self.width / 2, self.pos.getY() + self.size)
         p2 = Point(self.pos.getX() + self.width / 2, self.pos.getY() - self.size)
         
@@ -237,23 +272,7 @@ class Hoop:
 
 
 
-class Counter:
-    def __init__(self,pos, text_str='Score', count=0):
-        self.pos = pos
-        self.text_str = text_str
-        self.text = None
-        self.count = count
-        
-    def draw(self, window):
-        self.text = Text(self.pos, f'{self.text_str}: {self.count}')
-        self.text.setStyle('bold')
-        self.text.setFace('arial')
-        self.text.setSize(20)
-        self.text.draw(window)
-        
-    def change(self, i=1):
-        self.count += i
-        self.text.setText(f'{self.text_str}: {self.count}')
+
         
         
 
@@ -297,6 +316,10 @@ class Stickman:
 
     
 class Simulation(GraphWin):
+    
+    '''class that draws and contains all object simulation'''
+    '''and process collisions''' # to do!!!
+    
     def __init__(self, title: str, width=1280, height=720):
         GraphWin.__init__(self, title, width, height, autoflush=False)
         self.setCoords(0, 0, 16, 9) 
