@@ -155,67 +155,7 @@ class Parabola:
 
         return contact_point, best_distance
         
-    def checkCollision(self, ball: Ball, collision_point: Point, bounciness, friction, dt):
-        friction *= dt
-        # normal vector
-        normalx = ball.pos.getX() -  collision_point.getX()
-        normaly = ball.pos.getY() -  collision_point.getY()
-        
-        # distance from collision point to ball 
-        distance = np.sqrt(normalx**2 + normaly**2)
-        if distance == 0: return 
-        
-        # normalize
-        normalx /= distance
-        normaly /= distance
-        
-        # fix direction
-        if normaly < 0:
-            normalx = -normalx
-            normaly = -normaly 
-        
-        # tangent vector
-        tangentx = normaly
-        tangenty = -normalx
-        
-        # fix direction
-        if tangenty > 0:
-            tangentx = -tangentx
-            tangenty = -tangenty
-        
-        # correct position
-        x = collision_point.getX() + normalx * ball.getSize()
-        y = collision_point.getY() + normaly * ball.getSize()
-        ball.setPos(Point(x, y))
-        
-        # curent velocity
-        vx = ball.getVel().getX()
-        vy = ball.getVel().getY()
-        
-        v_normal = vx * normalx + vy * normaly    # projection of velocity on normal unit vector
-        v_tangent = vx * tangentx + vy * tangenty # projection of velocity on tangent unit vector
-        
-        # current acceleration
-        ax = ball.getAcl().getX()
-        ay = ball.getAcl().getY()
-        
-        # fix direction
-        if ay > 0:
-            ax = -ax
-            ay = -ay
-        
-        a_tangent = ax * tangentx + ay * tangenty 
-        
-        # new velocity with normal and tangent components
-        v_tangent_new = (v_tangent + a_tangent * dt) * (1 - friction)
-        v_normal_new = -v_normal * bounciness if v_normal < 0 else v_normal
-        
-        # new velocity with x and y components
-        new_vx = v_tangent_new * tangentx + v_normal_new * normalx
-        new_vy = v_tangent_new * tangenty + v_normal_new * normaly
-        
-        # set new velocity
-        ball.setVel(Point(new_vx, new_vy))
+    
         
         # debugging
         
@@ -270,8 +210,31 @@ class Hoop:
 
 # ------------------------------------------------------------------------
 
+class Wall(Line):
+    def __init__(self, p1: Point, p2: Point):
+        Line.__init__(self, p1, p2)
+        self.p1 = p1
+        self.p2 = p2
+        self.minX = min(self.p1.getX(), self.p2.getX())
+        self.maxX = max(self.p1.getX(), self.p2.getX())
+        self.slope = (self.p2.getY() - self.p1.getY()) / (self.p2.getX() - self.p1.getX())
+
+        
+        self.setWidth(5)
+        
+    def belongs(self, point: Point):
+        return self.minX <= point.getX() <= self.maxX and \
+               point.getY() == self.slope * (point.getX() - self.p1.getX()) + self.p1.getY()
+    
+    def distanceTo(self, point: Point):
+        pass
 
 
+
+
+
+
+# ------------------------------------------------------------------------
 
         
         
@@ -320,21 +283,104 @@ class Simulation(GraphWin):
     '''class that draws and contains all object simulation'''
     '''and process collisions''' # to do!!!
     
-    def __init__(self, title: str, width=1280, height=720):
+    def __init__(self, title: str, width=1280, height=720, dt = 1/ 60):
         GraphWin.__init__(self, title, width, height, autoflush=False)
-        self.setCoords(0, 0, 16, 9) 
-        self.objects = []
+        self.setCoords(0, 0, 16, 9)
+        self.dt = dt
+        self.dynamic_objects = []
+        self.static_objects = []
         
         self.setBackground('white')
         self.btn_quit = Button(Point(0.25, 8.75), Point(1, 8.25), 'QUIT', action=lambda: self.close())
-        self.btn_quit.draw(self)    
+        self.btn_quit.draw(self)
+        
 
-    def addObject(self, obj):
-        self.objects.append(obj)
+    def addDynamicObject(self, obj):
+        self.dynamic_objects.append(obj)
         obj.draw(self)
+        update(1 / self.dt)
+        
+    def addStaticObject(self, obj):
+        self.static_objects.append(obj)
+        obj.draw(self)
+        update(1 / self.dt)
         
     def checkQuitButton(self, mouse):
         self.btn_quit.is_clicked(mouse)
+        
+    def tick(self):
+        for obj in self.dynamic_objects:
+            if isinstance(obj, Ball):
+                obj.step(self.dt)
+                update(1 / self.dt)
+                
+    
+    def checkCollisionParabolaBall(self, parabola: Parabola, ball: Ball):
+        
+        collision_point, distance = parabola.distanceTo(ball.getPos())
+
+        if distance == 0: return 
+
+        if distance > ball.getSize(): return
+            
+        # normal vector
+        normalx = ball.pos.getX() -  collision_point.getX()
+        normaly = ball.pos.getY() -  collision_point.getY()
+        
+        # normalize
+        normalx /= distance
+        normaly /= distance
+        
+        # fix direction
+        if normaly < 0:
+            normalx = -normalx
+            normaly = -normaly 
+        
+        # tangent vector
+        tangentx = normaly
+        tangenty = -normalx
+        
+        # fix direction
+        if tangenty > 0:
+            tangentx = -tangentx
+            tangenty = -tangenty
+        
+        # correct position
+        x = collision_point.getX() + normalx * ball.getSize()
+        y = collision_point.getY() + normaly * ball.getSize()
+        ball.setPos(Point(x, y))
+        
+        # curent velocity
+        vx = ball.getVel().getX()
+        vy = ball.getVel().getY()
+        
+        v_normal = vx * normalx + vy * normaly    # projection of velocity on normal unit vector
+        v_tangent = vx * tangentx + vy * tangenty # projection of velocity on tangent unit vector
+        
+        # current acceleration
+        ax = ball.getAcl().getX()
+        ay = ball.getAcl().getY()
+        
+        # fix direction
+        if ay > 0:
+            ax = -ax
+            ay = -ay
+        
+        a_tangent = ax * tangentx + ay * tangenty 
+        
+        # new velocity with normal and tangent components
+        v_tangent_new = (v_tangent + a_tangent * self.dt)
+        
+        elacticity = 0
+        
+        v_normal_new = -v_normal * elacticity if v_normal < 0 else v_normal
+        
+        # new velocity with x and y components
+        new_vx = v_tangent_new * tangentx + v_normal_new * normalx
+        new_vy = v_tangent_new * tangenty + v_normal_new * normaly
+        
+        # set new velocity
+        ball.setVel(Point(new_vx, new_vy))
         
         
         
