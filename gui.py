@@ -161,10 +161,11 @@ class InputDialog(GraphWin):
             except:
                 return None
             
-            if val >= 0:
+            if 90 > val > 0:
                 values.append(val)
-            
-        return values
+                
+        if len(values) == len(self.entries): 
+            return values
 
 
 class Counter:

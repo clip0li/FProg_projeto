@@ -21,7 +21,7 @@ def main():
                 vel = randomize(vel)
                 angle = randomize(angle)
                 
-                scenary1 = Simulation('Cenário 1')
+                scenary1 = Simulation('Cenário 1', elacticity=0.5, friction=0.5)
                 
                 counter = Counter(Point(15, 8.5), 'Score', score)
                 scenary1.addStaticObject(counter)
@@ -29,10 +29,18 @@ def main():
                 hoop = Hoop(Point(14, 5), 1, 0.1)
                 scenary1.addStaticObject(hoop)
                 
-                stickman = Stickman(Point(1.5, 0), 2.6)
+                stickman = Stickman(Point(1.5, 0.1), 2.6)
                 scenary1.addStaticObject(stickman)
                 
-                ball = Ball(Point(3, height))
+                wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))
+                scenary1.addStaticObject(wall1)
+                wall2 = wall1 = Wall(Point(0.1, 0.1), Point(0.1, 20))
+                scenary1.addStaticObject(wall2)
+                wall3 = wall2 = wall1 = Wall(Point(15.9, 0.1), Point(15.9, 20))
+                scenary1.addStaticObject(wall3)
+                
+                
+                ball = Ball(Point(3, height+0.1))
                 scenary1.addDynamicObject(ball)
                 ball.setPos(Point(ball.getPos().getX(), ball.getPos().getY() + ball.getSize()))
                 vx = vel * np.cos(np.radians(angle))
@@ -45,14 +53,11 @@ def main():
                 while scenary1.isOpen():
                     mouse = scenary1.checkMouse()
                     
-                    if ball.getPos().getY() - ball.getSize() >= 0 \
-                       and ball.getPos().getX() + ball.getSize() < 16:
-                        scenary1.tick()
-                        
-                    else:
-                        if mouse != None:
-                            scenary1.close()
-                            break
+                    scenary1.checkCollisions()
+                    scenary1.tick()
+                    
+                    if np.sqrt(ball.getVel().getX() ** 2 + ball.getVel().getY() ** 2) < 0.1:
+                        scenary1.close()
                         
                     if mouse != None:
                         scenary1.checkQuitButton(mouse)
@@ -78,7 +83,7 @@ def main():
                 
                 scenary2 = Simulation('Cenário 2', dt=1/60)
                 
-                parabola = Parabola(Point(8, 1), 0.25, 15)
+                parabola = Parabola(Point(8, 1), 0.25, 5, 5)
                 scenary2.addStaticObject(parabola)
                 
                 y = height + parabola.getPos().getY()
@@ -98,9 +103,11 @@ def main():
                             ball.setVel(Point(0, 0))
                             ball.setAcl(Point(0,-9.8))
                 
-    
-                    scenary2.checkCollisionParabolaBall(parabola, ball)
+                    scenary2.checkCollisions()
                     scenary2.tick()
+                    
+                    if ball.getPos().getY() <= 0:
+                        scenary2.close()
                      
             main()
     
@@ -108,21 +115,28 @@ def main():
 
             scenary3 = Simulation('Cenário 3', dt=1/60)
             
-            wall = Wall(Point(1, 5), Point(3, 6))
-            scenary3.addStaticObject(wall)
+            parabola = Parabola(Point(5.1, 0.1), 0.25, 5, 2)
+            scenary3.addStaticObject(parabola)
+            
+            wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))
+            scenary3.addStaticObject(wall1)
+            wall2 = wall1 = Wall(Point(0.1, 0.1), Point(0.1, 20))
+            scenary3.addStaticObject(wall2)
+            wall3 = wall2 = wall1 = Wall(Point(15.9, 0.1), Point(15.9, 20))
+            scenary3.addStaticObject(wall3)
             
             while scenary3.isOpen():
                 mouse = scenary3.checkMouse()
                 if mouse != None:
                     scenary3.checkQuitButton(mouse)
-                        
+                       
             main()
             
         case '4':
             pass
                 
                 
-def randomize(value, percentage = 0.0):
+def randomize(value, percentage = 0.07):
     return value + random.uniform(- value * percentage, value * percentage)
      
      

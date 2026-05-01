@@ -7,6 +7,7 @@ Contains Ball, Parabola, Hoop, Simulation
 from graphics import *
 from gui import *
 import numpy as np
+import time
 
 class Ball:
     
@@ -82,16 +83,18 @@ class Parabola:
     
     '''Draws parabola from vertice position, curvature(a) and centered width'''
     
-    def __init__(self, pos:Point, curvature, width):
+    def __init__(self, pos:Point, curvature, left_width, right_width):
         self.pos = pos
         self.curvature = curvature
-        self.width = width
+        self.left_width = left_width
+        self.right_width = right_width
+        self.width = left_width + right_width
         
     def getPos(self):
         return self.pos
         
     def draw(self, window: GraphWin, lines = 100):
-        x0 = self.pos.getX() - self.width / 2
+        x0 = self.pos.getX() - self.left_width
         step = self.width / lines
         previous_point = Point(x0, self.equationGetY(x0))
         
@@ -102,7 +105,7 @@ class Parabola:
             point = Point(x, y)
             
             line = Line(previous_point, point)
-            line.setWidth(2)
+            line.setWidth(3)
             line.draw(window)
             
             previous_point = point
@@ -131,6 +134,9 @@ class Parabola:
         nx = px - x0
         ny = py - y0
         
+        x_min = -self.left_width
+        x_max = self.right_width
+        
         # coefficients of polinomial of 3rd degree
         coeffs = [2*a**2, 0, 1 - 2*a*ny, -nx]
         
@@ -140,18 +146,24 @@ class Parabola:
         # choosing only real roots
         real_roots = [r.real for r in roots ] # if abs(r.imag) < 1e-9
 
-        contact_point = None
-        best_distance = float('inf') # infinity if point is not finded
+        candidates = []
         
         for k in real_roots:
-            x = k + x0
-            y = a * k**2 + y0
-            
-            dist = np.sqrt((x - px)**2 + (y - py)**2)
-            
+            if x_min <= k <= x_max:
+                candidates.append(Point(k + x0, a * k**2 + y0))
+                
+        # limits
+        candidates.append(Point(x0 + x_min, self.equationGetY(x0 + x_min)))
+        candidates.append(Point(x0 + x_max, self.equationGetY(x0 + x_max)))
+        
+        contact_point = None
+        best_distance = float('inf')
+        
+        for cp in candidates:
+            dist = np.sqrt((cp.getX() - px)**2 + (cp.getY() - py)**2)
             if dist < best_distance:
                 best_distance = dist
-                contact_point = Point(x, y)
+                contact_point = cp
 
         return contact_point, best_distance
         
@@ -215,20 +227,29 @@ class Wall(Line):
         Line.__init__(self, p1, p2)
         self.p1 = p1
         self.p2 = p2
-        self.minX = min(self.p1.getX(), self.p2.getX())
-        self.maxX = max(self.p1.getX(), self.p2.getX())
-        self.slope = (self.p2.getY() - self.p1.getY()) / (self.p2.getX() - self.p1.getX())
-
+        self.vector = Point(self.p2.getX() - self.p1.getX(), self.p2.getY() - self.p1.getY())
         
         self.setWidth(5)
         
-    def belongs(self, point: Point):
-        return self.minX <= point.getX() <= self.maxX and \
-               point.getY() == self.slope * (point.getX() - self.p1.getX()) + self.p1.getY()
-    
     def distanceTo(self, point: Point):
-        pass
+        # vector from p1 to point
+        w = Point(point.getX() - self.p1.getX(), point.getY() - self.p1.getY())
+        
+        # project of w to vector of wall
+        dot = self.vector.getX() * w.getX() + self.vector.getY() * w.getY() 
+        vector_sq = (self.vector.getX()**2 + self.vector.getY()**2)
+        proj = max(0, min(1, dot / vector_sq))
 
+        # contact point
+        x = self.p1.getX() + proj * self.vector.getX()
+        y = self.p1.getY() + proj * self.vector.getY()
+        
+        
+        dx = point.getX() - x 
+        dy = point.getY() - y
+        distance = np.sqrt(dx**2 + dy**2)
+        
+        return Point(x, y), distance
 
 
 
@@ -283,12 +304,14 @@ class Simulation(GraphWin):
     '''class that draws and contains all object simulation'''
     '''and process collisions''' # to do!!!
     
-    def __init__(self, title: str, width=1280, height=720, dt = 1/ 60):
+    def __init__(self, title: str, width=1280, height=720, dt = 1/ 60, elacticity=0, friction = 0):
         GraphWin.__init__(self, title, width, height, autoflush=False)
         self.setCoords(0, 0, 16, 9)
         self.dt = dt
         self.dynamic_objects = []
         self.static_objects = []
+        self.elacticity = elacticity
+        self.friction = friction
         
         self.setBackground('white')
         self.btn_quit = Button(Point(0.25, 8.75), Point(1, 8.25), 'QUIT', action=lambda: self.close())
@@ -312,16 +335,13 @@ class Simulation(GraphWin):
         for obj in self.dynamic_objects:
             if isinstance(obj, Ball):
                 obj.step(self.dt)
+                time.sleep(self.dt)
                 update(1 / self.dt)
                 
     
-    def checkCollisionParabolaBall(self, parabola: Parabola, ball: Ball):
-        
-        collision_point, distance = parabola.distanceTo(ball.getPos())
-
-        if distance == 0: return 
-
-        if distance > ball.getSize(): return
+    def collisionWithStaticObject(self, ball: Ball, object):
+        collision_point, distance = object.distanceTo(ball.getPos())
+        if distance == 0 or distance > ball.getSize(): return 
             
         # normal vector
         normalx = ball.pos.getX() -  collision_point.getX()
@@ -331,25 +351,20 @@ class Simulation(GraphWin):
         normalx /= distance
         normaly /= distance
         
-        # fix direction
-        if normaly < 0:
-            normalx = -normalx
-            normaly = -normaly 
-        
         # tangent vector
         tangentx = normaly
         tangenty = -normalx
         
-        # fix direction
-        if tangenty > 0:
-            tangentx = -tangentx
-            tangenty = -tangenty
-        
         # correct position
-        x = collision_point.getX() + normalx * ball.getSize()
-        y = collision_point.getY() + normaly * ball.getSize()
+        if normaly >= 0:
+            x = collision_point.getX() + normalx * ball.getSize()
+            y = collision_point.getY() + normaly * ball.getSize()
+        else:
+            x = collision_point.getX() - normalx * ball.getSize()
+            y = collision_point.getY() - normaly * ball.getSize()
+            
         ball.setPos(Point(x, y))
-        
+            
         # curent velocity
         vx = ball.getVel().getX()
         vy = ball.getVel().getY()
@@ -360,20 +375,11 @@ class Simulation(GraphWin):
         # current acceleration
         ax = ball.getAcl().getX()
         ay = ball.getAcl().getY()
-        
-        # fix direction
-        if ay > 0:
-            ax = -ax
-            ay = -ay
-        
         a_tangent = ax * tangentx + ay * tangenty 
         
         # new velocity with normal and tangent components
-        v_tangent_new = (v_tangent + a_tangent * self.dt)
-        
-        elacticity = 0
-        
-        v_normal_new = -v_normal * elacticity if v_normal < 0 else v_normal
+        v_tangent_new = (v_tangent + a_tangent * self.dt) * (1 - self.friction)
+        v_normal_new = -v_normal * self.elacticity 
         
         # new velocity with x and y components
         new_vx = v_tangent_new * tangentx + v_normal_new * normalx
@@ -383,7 +389,12 @@ class Simulation(GraphWin):
         ball.setVel(Point(new_vx, new_vy))
         
         
-        
+    def checkCollisions(self):
+        for dobj in self.dynamic_objects:
+            for sobj in self.static_objects:
+                if isinstance(dobj, Ball) and (isinstance(sobj, Parabola) or isinstance(sobj, Wall)):
+                    self.collisionWithStaticObject(dobj, sobj)
+
 
                 
     
