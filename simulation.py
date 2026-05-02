@@ -72,11 +72,9 @@ class Ball:
         new_vx = vx + self.acl.getX() * dt
         new_vy = vy + self.acl.getY() * dt
         self.vel = Point(new_vx, new_vy)
+              
         
-        
-        
-# ------------------------------------------------------------------------
-
+# -------------------------------------------------------------------
 
 
 class Parabola:
@@ -167,15 +165,8 @@ class Parabola:
 
         return contact_point, best_distance
         
-    
         
-        # debugging
-        
-        #print('Velocity: ', new_vx, new_vy)
-        #print('Acceleration: ', ax, ay, '\n')
-        
-# ------------------------------------------------------------------------
-
+# -------------------------------------------------------------------
 
 
 class Hoop:
@@ -219,8 +210,8 @@ class Hoop:
         return False
 
 
+# -------------------------------------------------------------------
 
-# ------------------------------------------------------------------------
 
 class Wall(Line):
     def __init__(self, p1: Point, p2: Point):
@@ -252,53 +243,9 @@ class Wall(Line):
         return Point(x, y), distance
 
 
-
-
-
-# ------------------------------------------------------------------------
-
-        
-        
-
-class Stickman:
-    def __init__(self, pos: Point, height):
-        self.pos = pos
-        self.height = height
-        
-    def draw(self, window: GraphWin):
-        x = self.pos.getX()
-        y = self.pos.getY()
-        h = self.height
-        head = Circle(Point(x, y + h * 0.85), h * 0.15)
-        head.setWidth(2)
-        head.draw(window)
-        
-        body = Line(Point(x, y + h * 0.3), Point(x, y + h * 0.7))
-        body.setWidth(2)
-        body.draw(window)
-        
-        left_leg = Line(Point(x, y + h * 0.3), Point(x - 0.2, y))
-        left_leg.setWidth(2)
-        left_leg.draw(window)
-        
-        right_leg = Line(Point(x, y + h * 0.3), Point(x + 0.2, y))
-        right_leg.setWidth(2)
-        right_leg.draw(window)
-        
-        left_arm = Line(Point(x, y + h * 0.6), Point(x - 0.2, y + h * 0.3))
-        left_arm.setWidth(2)
-        left_arm.draw(window)
-        
-        right_arm = Line(Point(x, y + h * 0.6), Point(x + 0.2, y + h * 0.3))
-        right_arm.setWidth(2)
-        right_arm.draw(window)
-    
-
-
-# ------------------------------------------------------------------------ 
+# -------------------------------------------------------------------
             
 
-    
 class Simulation(GraphWin):
     
     '''class that draws and contains all object simulation'''
@@ -395,9 +342,10 @@ class Simulation(GraphWin):
                 if isinstance(dobj, Ball) and (isinstance(sobj, Parabola) or isinstance(sobj, Wall)):
                     self.collisionWithStaticObject(dobj, sobj)
 
-
-                
-    
-        
-    
-    
+            dobjects = self.dynamic_objects.copy()
+            dobjects.remove(dobj)
+            
+            for dobj1 in dobjects:
+                return
+            
+            

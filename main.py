@@ -3,6 +3,7 @@ from gui import *
 from simulation import *
 import random
 
+
 def main():
     slct_win = SelectionWindow(400)
 
@@ -13,9 +14,7 @@ def main():
             while True:
                 dialog = InputDialog(250, 300, ('Velocity', 'Angle', 'Height'))
                 values = dialog.getValues() 
-                
-                if values is None: 
-                    break 
+                if values is None: break 
                     
                 vel, angle, height = values
                 vel = randomize(vel)
@@ -29,7 +28,7 @@ def main():
                 hoop = Hoop(Point(14, 5), 1, 0.1)
                 scenary1.addStaticObject(hoop)
                 
-                stickman = Stickman(Point(1.5, 0.1), 2.6)
+                stickman = Stickman(Point(1.5, 0.15), 3)
                 scenary1.addStaticObject(stickman)
                 
                 wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))
@@ -38,7 +37,6 @@ def main():
                 scenary1.addStaticObject(wall2)
                 wall3 = wall2 = wall1 = Wall(Point(15.9, 0.1), Point(15.9, 20))
                 scenary1.addStaticObject(wall3)
-                
                 
                 ball = Ball(Point(3, height+0.1))
                 scenary1.addDynamicObject(ball)
@@ -56,7 +54,7 @@ def main():
                     scenary1.checkCollisions()
                     scenary1.tick()
                     
-                    if np.sqrt(ball.getVel().getX() ** 2 + ball.getVel().getY() ** 2) < 0.1:
+                    if np.sqrt(ball.getVel().getX() ** 2 + ball.getVel().getY() ** 2) < 0.1 and False:
                         scenary1.close()
                         
                     if mouse != None:

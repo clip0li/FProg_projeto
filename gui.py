@@ -5,6 +5,7 @@ Contains: Button, InputDialog, Counter, SelectionWindow
 '''
 
 from graphics import *
+import numpy as np
 
 class Button:
     
@@ -44,27 +45,23 @@ class Button:
         self.text.setFace('arial')
         self.text.setSize(self.text_size)
         
-        
     def setTextColor(self, color):
         self.text.setTextColor(color)
         self.text_color = color
-        
         
     def setBackgroundColor(self, color):
         self.body.setFill(color)
         self.background_color = color
 
-        
     def setAction(self, action):
         self.action = action
-        
         
     def getTextString(self):
         return self.text_string
     
-    
     def is_clicked(self, pos: Point):
         if pos == None: return False
+        
         if self.shape == 'rectangle':
             
             if min(self.p1.getX(), self.p2.getX()) <= pos.getX() <= max(self.p1.getX(), self.p2.getX()) and \
@@ -89,8 +86,85 @@ class Button:
             
         else: return False
         
+# -------------------------------------------------------------------
+
+
+class Stickman:
+    def __init__(self, pos: Point, height):
+        self.pos = pos
+        self.height = height
+        self.body_angle = 90
         
-# -----------------------------------------------------------------------------------------------------------------
+    def draw(self, window: GraphWin):
+        x = self.pos.getX()
+        y = self.pos.getY()
+        h = self.height
+        
+        angle = self.body_angle * np.pi / 180
+        
+        cos = np.cos(angle)
+        sin = np.sin(angle)
+        
+        head_size = 0.1 * h
+        hip_size = 0.2 * self.height
+        shoulders_size = 1.5 * hip_size
+        foot_size = 0.1 * self.height
+        
+        leg_point = Point(x, y + 0.4 * h)
+        arms_point = Point(x + 0.4 * h * cos, leg_point.getY() + 0.4 * h * sin)
+        head_point = Point(arms_point.getX() +  head_size * cos, arms_point.getY() +  head_size * sin)
+        
+        a_cos = np.cos(angle + np.pi / 2)
+        a_sin = np.sin(angle + np.pi / 2)
+        left_arm_point = Point(arms_point.getX() - shoulders_size / 2 * a_cos, arms_point.getY() - shoulders_size / 2 * a_sin)
+        right_arm_point = Point(arms_point.getX() + shoulders_size / 2 * a_cos, arms_point.getY() + shoulders_size / 2 * a_sin)
+        
+        
+        # hips
+        hips = Line(Point(leg_point.getX() - hip_size / 2, leg_point.getY()), Point(leg_point.getX() + hip_size / 2, leg_point.getY()))
+        hips.setWidth(2)
+        hips.draw(window)
+        
+        # left leg
+        left_leg = Line(Point(leg_point.getX() - hip_size / 2, leg_point.getY()), Point(leg_point.getX() - hip_size / 4, y))
+        left_leg.setWidth(2)
+        left_leg.draw(window)
+        
+        # right leg
+        right_leg = Line(Point(leg_point.getX() + hip_size / 2, leg_point.getY()), Point(leg_point.getX() + hip_size / 4, y))
+        right_leg.setWidth(2)
+        right_leg.draw(window)
+        
+        # left foot 
+        left_foot = Line(Point(leg_point.getX() - hip_size / 4, y), Point(leg_point.getX() - hip_size / 4 - foot_size, y))
+        left_foot.setWidth(3)
+        left_foot.draw(window)
+        
+        # right foot
+        right_foot = Line(Point(leg_point.getX() + hip_size / 4, y), Point(leg_point.getX() + hip_size / 4 + foot_size, y))
+        right_foot.setWidth(3)
+        right_foot.draw(window)
+        
+        # body
+        body = Line(leg_point, arms_point)
+        body.setWidth(2)
+        body.draw(window)
+        
+        # shoulders
+        shoulders = Line(left_arm_point, right_arm_point)
+        shoulders.setWidth(2)
+        shoulders.draw(window)
+        
+        # head
+        head = Circle(head_point, head_size)
+        head.setWidth(2)
+        head.setFill('white')
+        head.draw(window)
+        
+        
+
+                
+# -------------------------------------------------------------------
 
 
 class InputDialog(GraphWin):
@@ -106,12 +180,10 @@ class InputDialog(GraphWin):
         step = self.height / (len(self.inputs) + 2)
         
         for i, inp in enumerate(self.inputs):
-           
             text = Text(Point(self.width / 3, (i + 1) * step), f'{inp}: ')
             text.setStyle('bold')
             text.setSize(14)
             text.draw(self)
-            
             
             entry = Entry(Point(2 * self.width / 3, (i + 1) * step), self.entries_width)
             entry.setFill('white')
@@ -126,7 +198,6 @@ class InputDialog(GraphWin):
                               Point(self.width / 3 + w, btn_y + 0.5 * w), 'QUIT')
         self.btn_quit.draw(self)
         
-        
         self.btn_run = Button(Point(2 * self.width / 3 - w, btn_y - 0.5 * w),
                              Point(2 * self.width / 3 + w, btn_y + 0.5 * w), 'RUN',
                              background_color='crimson', text_color='white')
@@ -137,35 +208,30 @@ class InputDialog(GraphWin):
         while self.isOpen():
             mouse = self.checkMouse()
             if mouse != None:
-        
                 if self.btn_quit.is_clicked(mouse):
                     self.close()
-                    return None
+                    return 
                 
                 if self.btn_run.is_clicked(mouse):
+                    data = []
                     
-                    data = self.processInput()
+                    for entry in self.entries:
+                        value = entry.getText().replace(',', '.')
+                        
+                        try:
+                            value = float(value)
+                        except:
+                            return
+                        
+                        if 0 < value < 90:
+                            data.append(value)
                     
-                    if data != None and data != []:
+                    if data != [] and len(data) == len(self.entries):
                         self.close()
                         return data
 
-    def processInput(self):
-        values = []
-        
-        for entry in self.entries:
-            val = entry.getText().replace(',', '.')
-            
-            try:
-                val = float(val)
-            except:
-                return None
-            
-            if 90 > val > 0:
-                values.append(val)
-                
-        if len(values) == len(self.entries): 
-            return values
+
+# -------------------------------------------------------------------
 
 
 class Counter:
@@ -191,79 +257,80 @@ class Counter:
         self.value += i
         self.text.setText(f'{self.text_str}: {self.value}')
 
-# -----------------------------------------------------------------------------------------------------------------        
+
+# -------------------------------------------------------------------
     
 
 class SelectionWindow(GraphWin):
     def __init__(self, size):
-        GraphWin.__init__(self, 'Select', size, 1.15 * size)
+        GraphWin.__init__(self, 'Select', size, 1.15 * size, autoflush=False)
         self.size = size
+        self.selection_buttons = []
+        self.buttons = []
         self.selected = None
-        self.selection_buttons = None
         
-    def btn_select_action(self, button: Button):
-        for btn in self.selection_buttons:
-            btn.setTextColor('black')
-            
-        self.selected = button    
-        button.setTextColor('red')
-        
-        self.update()
-
-    def btn_quit_action(self):
-        self.close()
-    
-    def select(self):
         self.setBackground('white')
         
-        size = self.size
-        
-        btn1 = Button(Point(0.05 * size, 0.05 * size), Point(0.5 * size, 0.5 * size), '1',
-                      action=lambda:self.btn_select_action(btn1))
-        btn1.draw(self)
-        
-        
-        btn2 = Button(Point(0.5 * size, 0.05 * size), Point(0.95 * size, 0.5 * size), '2',
-                      action=lambda:self.btn_select_action(btn2))
-        btn2.draw(self)
-        
-        
-        btn3 = Button(Point(0.05 * size, 0.5 * size), Point(0.5 * size, 0.95 * size), '3',
-                      action=lambda:self.btn_select_action(btn3))
-        btn3.draw(self)
-        
-        
-        btn4 = Button(Point(0.5 * size, 0.5 * size), Point(0.95 * size, 0.95 * size), '4',
-                      action=lambda:self.btn_select_action(btn4))
-        btn4.draw(self)
-        
-        
-        btn_quit = Button(Point(0.4 * size, size), Point(0.6 * size, 1.1 * size), 'QUIT',
-                          action=self.btn_quit_action)
-        btn_quit.draw(self)
-        
-        
-        btn_start = Button(Point(0.3 * size , 0.3 * size), Point(0.7 * size, 0.7 * size), 'START',
+        # start button
+        self.btn_start = Button(Point(0.3 * size , 0.3 * size), Point(0.7 * size, 0.7 * size), 'START',
                            shape='oval',
                            background_color='crimson',
                            text_color='white',
                            text_size=20,)
         
-        btn_start.draw(self)
-    
-        buttons = [btn_start, btn_quit, btn1, btn2, btn3, btn4]
-        self.selection_buttons = [btn1, btn2, btn3, btn4]
+        self.buttons.append(self.btn_start)
+            
+        # quit button
+        self.btn_quit = Button(Point(0.4 * size, size), Point(0.6 * size, 1.1 * size), 'QUIT',
+                          action=self.btn_quit_action)
         
+        self.buttons.append(self.btn_quit)
+        
+        # selection buttons
+        for i in range(1, 5):
+            if i % 2 == 0:
+                x1 = 0.5 * size
+                x2 = 0.95 * size
+            else:
+                x1 = 0.05 * size
+                x2 = 0.5 * size
+                
+            if i == 1 or i == 2:
+                y1 = 0.05 * size
+                y2 = 0.5 * size
+            else:
+                y1 = 0.5 * size
+                y2 = 0.95 * size
+        
+            btn = Button(Point(x1, y1), Point(x2, y2), str(i), action=lambda n=i: self.btn_select_action(n))
+            btn.draw(self)
+            self.selection_buttons.append(btn)
+            self.buttons.append(btn)
+        
+        self.btn_start.draw(self)
+        self.btn_quit.draw(self)
+        self.update()
+        
+    def btn_select_action(self, n):
+        for btn in self.selection_buttons:
+            btn.setTextColor('black')
+            
+        self.selected = self.selection_buttons[n-1]    
+        self.selected.setTextColor('red')
+        self.update()
+
+    def btn_quit_action(self):
+        self.selected = None
+        self.close()
+    
+    def select(self):
         while self.isOpen():
             mouse = self.checkMouse()
             if mouse != None:
-                
-                for btn in buttons:
+                for btn in self.buttons:
                     if btn.is_clicked(mouse):
-                        
-                        if btn == btn_start and self.selected != None:
+                        if btn == self.btn_start and self.selected != None:
                             self.close()
                             return self.selected.getTextString()
                             
                         break
-             
