@@ -202,7 +202,8 @@ class InputDialog(GraphWin):
                              Point(2 * self.width / 3 + w, btn_y + 0.5 * w), 'RUN',
                              background_color='crimson', text_color='white')
         self.btn_run.draw(self)
-        
+    
+    
         
     def getValues(self):
         while self.isOpen():
@@ -225,11 +226,18 @@ class InputDialog(GraphWin):
                         
                         if 0 < value < self.inputs[self.entries.index(entry)][1]:
                             data.append(value)
+                        else:
+                            entry.setTextColor('red')
+                            
                     
                     if data != [] and len(data) == len(self.entries):
                         self.close()
                         return data
-
+            
+            key = self.checkKey()
+            if key != '':
+                for entry in self.entries:
+                    entry.setTextColor('black')
 
 # -------------------------------------------------------------------
 
@@ -283,7 +291,6 @@ class SelectionWindow(GraphWin):
         # quit button
         self.btn_quit = Button(Point(0.4 * size, size), Point(0.6 * size, 1.1 * size), 'QUIT',
                           action=self.btn_quit_action)
-        
         self.buttons.append(self.btn_quit)
         
         # selection buttons
@@ -332,5 +339,4 @@ class SelectionWindow(GraphWin):
                         if btn == self.btn_start and self.selected != None:
                             self.close()
                             return self.selected.getTextString()
-                            
                         break

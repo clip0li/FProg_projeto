@@ -16,12 +16,13 @@ def main():
                 if values is None: break 
                     
                 vel, angle, height = values
-                vel = randomize(vel)
-                angle = randomize(angle)
+                vel = randomize(vel, 0.02)
+                angle = randomize(angle, 0.05)
                 
                 scenary1 = Simulation('Cenário 1', elacticity=0.5, friction=0.5)
-                
-                counter = Counter(Point(15, 8.5), 'Score', score)
+                recorder = TrajectoryRecorder()
+
+                counter = Counter(Point(2, 8.5), 'Score', score)
                 scenary1.addStaticObject(counter)
                 
                 hoop = Hoop(Point(14, 5), 1, 0.1)
@@ -32,9 +33,9 @@ def main():
                 
                 wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))
                 scenary1.addStaticObject(wall1)
-                wall2 = wall1 = Wall(Point(0.1, 20), Point(0.1, 0.1))
+                wall2 = Wall(Point(0.1, 20), Point(0.1, 0.1))
                 scenary1.addStaticObject(wall2)
-                wall3 = wall2 = wall1 = Wall(Point(15.9, 0.1), Point(15.9, 20))
+                wall3 = Wall(Point(15.9, 0.1), Point(15.9, 20))
                 scenary1.addStaticObject(wall3)
                 
                 ball = Ball(Point(3, height+0.1))
@@ -49,13 +50,8 @@ def main():
                 
                 while scenary1.isOpen():
                     mouse = scenary1.checkMouse()
-                    
-                    scenary1.checkCollisions()
-                    scenary1.tick()
-                    
-                    if ball.getSpeed() < 0.1:
-                        scenary1.close()
-                        
+                    key = scenary1.checkKey()
+    
                     if mouse != None:
                         scenary1.checkQuitButton(mouse)
                         
@@ -63,7 +59,23 @@ def main():
                         counter.change(2)
                         score += 2
                         scored = True
-                
+
+                    if ball.getPos().getY() < ball.getSize() + 0.11:
+                        scenary1.stopped()
+                        scenary1.checkCollisions()
+
+                        if key == 'g':
+                            recorder.save()
+                        if mouse != None:
+                            scenary1.close()
+                            break
+                        
+                    else:
+                        recorder.record(1/60, ball)
+                        scenary1.checkCollisions()
+                        scenary1.tick()
+                    
+                    
                 scored = False
                 
             main()    
@@ -73,13 +85,10 @@ def main():
             while True:
                 dialog = InputDialog(250, 300, (('Height',6.1),))
                 values = dialog.getValues() 
-                
                 if values == None: break 
-                    
                 height = values[0]
                 
-                scenary2 = Simulation('Cenário 2', dt=1/60, friction=0, elacticity=1)
-                
+                scenary2 = Simulation('Cenário 2', dt=1/60, friction=0.5, elacticity=0)
                 recorder = TrajectoryRecorder()
                 
                 parabola = Parabola(Point(8, 1), 0.25, 5, 5)
@@ -93,6 +102,7 @@ def main():
                 scenary2.addDynamicObject(ball)
 
                 while scenary2.isOpen():
+                    '''
                     mouse = scenary2.checkMouse()
                     if mouse != None:
                         scenary2.checkQuitButton(mouse)
@@ -101,30 +111,32 @@ def main():
                             ball.setPos(mouse)
                             ball.setVel(Point(0, 0))
                             ball.setAcl(Point(0,-9.8))
-                            
-                    recorder.record(1/60, ball)
-        
-                    scenary2.checkCollisions()
-                    scenary2.tick()
+                    '''
+                    key = scenary2.checkKey()
+                    mouse = scenary2.checkMouse()    
                     
-                    
+                    if mouse != None:
+                        scenary1.checkQuitButton(mouse)
+                        
                     if ball.getPos().getY() <= 0 or \
                     (ball.getSpeed() < 0.17 and ball.getPos().getY() < parabola.getPos().getY() + 1.0001 * ball.getSize()):
                         scenary2.stopped()
-                        
-                        key = scenary2.checkKey()
-                        mouse = scenary2.checkMouse()
-
+                
                         if key == 'g':
                             recorder.save()
                         if mouse != None:
                             scenary2.close()
                             break
+                        
+                    else:
+                        recorder.record(1/60, ball)
+                        scenary2.checkCollisions()
+                        scenary2.tick()
                       
             main()
     
         case '3':
-
+            
             scenary3 = Simulation('Cenário 3', dt=1/60)
             
             parabola = Parabola(Point(5.1, 0.1), 0.25, 5, 2)
@@ -132,23 +144,49 @@ def main():
             
             wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))
             scenary3.addStaticObject(wall1)
-            wall2 = wall1 = Wall(Point(0.1, 20), Point(0.1, 0.1))
+            wall2 = Wall(Point(0.1, 8.9), Point(0.1, 0.1))
             scenary3.addStaticObject(wall2)
-            wall3 = wall2 = wall1 = Wall(Point(15.9, 0.1), Point(15.9, 20))
+            wall3 = Wall(Point(15.9, 0.1), Point(15.9, 8.9))
             scenary3.addStaticObject(wall3)
-            
+            wall4 = Wall(Point(15.9, 8.9), Point(0.1, 8.9))
+            scenary3.addStaticObject(wall4)
+        
             while scenary3.isOpen():
                 mouse = scenary3.checkMouse()
                 if mouse != None:
                     scenary3.checkQuitButton(mouse)
                        
-            main()
+            
             
         case '4':
-            pass
+            scenary4 = Simulation('Cenário 3', dt=1/60, elacticity=1)
+            
+            wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))
+            scenary4.addStaticObject(wall1)
+            wall2 = Wall(Point(0.1, 8.9), Point(0.1, 0.1))
+            scenary4.addStaticObject(wall2)
+            wall3 = Wall(Point(15.9, 0.1), Point(15.9, 8.9))
+            scenary4.addStaticObject(wall3)
+            wall4 = Wall(Point(15.9, 8.9), Point(0.1, 8.9))
+            scenary4.addStaticObject(wall4)
+            
+            ball = Ball(Point(8, 4.5))
+            scenary4.addDynamicObject(ball)
+            ball.setAcl(Point(0,-0.5))
+            
+            while scenary4.isOpen():
+                mouse = scenary4.checkMouse()
+                key = scenary4.checkKey()
                 
+                if mouse != None:
+                    scenary4.checkQuitButton(mouse)
                 
-def randomize(value, percentage = 0.07):
+                scenary4.checkCollisions()
+                scenary4.tick()
+                       
+            main()    
+                
+def randomize(value, percentage):
     return value + random.uniform(- value * percentage, value * percentage)
           
 main()

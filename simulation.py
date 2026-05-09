@@ -146,8 +146,7 @@ class Parabola:
         roots = np.roots(coeffs)
         
         # choosing only real roots
-        real_roots = [r.real for r in roots ] # if abs(r.imag) < 1e-9
-
+        real_roots = [r.real for r in roots if abs(r.imag) < 1e-9]
         candidates = []
         
         for k in real_roots:
@@ -277,7 +276,7 @@ class Simulation(GraphWin):
         self.dynamic_objects = []
         self.static_objects = []
         self.elacticity = elacticity
-        self.friction = friction * dt
+        self.friction = friction 
         
         self.setBackground('white')
         self.btn_quit = Button(Point(0.25, 8.75), Point(1, 8.25), 'QUIT', action=lambda: self.close())
@@ -307,11 +306,17 @@ class Simulation(GraphWin):
         self.btn_quit.is_clicked(mouse)
         
     def tick(self):
+        tick_start = time.perf_counter()
         for obj in self.dynamic_objects:
             if isinstance(obj, Ball):
                 obj.step(self.dt)
-                time.sleep(self.dt)
-                update(1 / self.dt)
+        update(1 / self.dt)
+        
+        elapsed = time.perf_counter() - tick_start
+        remaining = self.dt - elapsed
+        
+        if remaining > 0:
+            time.sleep(remaining)
                 
     def stopped(self):
         self.indicator.setFill('red')
@@ -343,6 +348,7 @@ class Simulation(GraphWin):
         else:
             x = collision_point.getX() - normalx * ball.getSize()
             y = collision_point.getY() - normaly * ball.getSize()
+        
             
         ball.setPos(Point(x, y))
             
@@ -359,7 +365,7 @@ class Simulation(GraphWin):
         a_tangent = ax * tangentx + ay * tangenty 
         
         # new velocity with normal and tangent components
-        v_tangent_new = (v_tangent + a_tangent * self.dt) * (1 - self.friction)
+        v_tangent_new = (v_tangent + a_tangent * self.dt) * (1 - self.friction * self.dt)
         v_normal_new = -v_normal * self.elacticity 
         
         # new velocity with x and y components
@@ -384,33 +390,42 @@ class Simulation(GraphWin):
             
             
             
-class TrajectoryRecorder():
-    def __init__(self):
-        #self.window = sim
-        #self.dynamic_objects = sim.getDynamicObjects()
-        self.data = []
-        self.simulation_time = 0
-        
-    def clear(self):
-        self.data = []
+import time
+from tkinter import filedialog
 
-    def record(self, dt, ball: Ball):
-        t = time.localtime()
-        ms = int((time.time() % 1) * 1000)
-        time_str = f'{time.strftime("%H:%M:%S", t)}.{ms:03d} '
-        simulation_time = f'{self.simulation_time:.3f} '
-        x = f'{ball.getPos().getX():.3f} '
-        y = f'{ball.getPos().getY():.3f} '
+class TrajectoryRecorder:
+    def __init__(self):
+        self.clear() 
+
+    def clear(self):
+        self.t0 = time.time()
+        self.elapsed_time = 0
+        self.time_log = []
+        self.x_log = []
+        self.y_log = []
+
+    def record(self, dt, ball):
+        self.time_log.append(self.elapsed_time)
+        self.elapsed_time += dt
         
-        line = time_str + ' | Time: ' + simulation_time + ' | X: ' + x + ' | Y: ' + y
-        
-        self.simulation_time += dt
-        self.data.append(line)
+        self.x_log.append(ball.getPos().getX())
+        self.y_log.append(ball.getPos().getY())
     
     def save(self):
-        file = filedialog.asksaveasfile(mode='w', defaultextension=".txt")
-        if file is not None: 
-            file.write("\n".join(["".join(map(str, row)) for row in self.data]))
+        file_path = filedialog.asksaveasfilename(defaultextension=".txt")
+        if file_path == None:  
+            return
+        
+        with open(file_path, 'w') as file:
+            local_time = time.localtime(self.t0)
+            ms = int((self.t0 % 1) * 1000)
+            t0_str = f"{time.strftime('%H:%M:%S', local_time)}.{ms:03d}\n"
+            
+            file.write(f"Start Time: {t0_str}\n")
+            file.write("Elapsed Time: " + " ".join(f"{t:.3f}" for t in self.time_log) + "\n")
+            file.write("X Positions:  " + " ".join(f"{x:.3f}" for x in self.x_log) + "\n")
+            file.write("Y Positions:  " + " ".join(f"{y:.3f}" for y in self.y_log) + "\n")
+        
             
         
     
