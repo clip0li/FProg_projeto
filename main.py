@@ -3,7 +3,6 @@ from gui import *
 from simulation import *
 import random
 
-
 def main():
     slct_win = SelectionWindow(400)
 
@@ -12,7 +11,7 @@ def main():
             score = 0
             # 12 45 2
             while True:
-                dialog = InputDialog(250, 300, ('Velocity', 'Angle', 'Height'))
+                dialog = InputDialog(250, 300, (('Velocity', 20), ('Angle', 90), ('Height', 7)))
                 values = dialog.getValues() 
                 if values is None: break 
                     
@@ -33,7 +32,7 @@ def main():
                 
                 wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))
                 scenary1.addStaticObject(wall1)
-                wall2 = wall1 = Wall(Point(0.1, 0.1), Point(0.1, 20))
+                wall2 = wall1 = Wall(Point(0.1, 20), Point(0.1, 0.1))
                 scenary1.addStaticObject(wall2)
                 wall3 = wall2 = wall1 = Wall(Point(15.9, 0.1), Point(15.9, 20))
                 scenary1.addStaticObject(wall3)
@@ -54,7 +53,7 @@ def main():
                     scenary1.checkCollisions()
                     scenary1.tick()
                     
-                    if np.sqrt(ball.getVel().getX() ** 2 + ball.getVel().getY() ** 2) < 0.1 and False:
+                    if ball.getSpeed() < 0.1:
                         scenary1.close()
                         
                     if mouse != None:
@@ -72,14 +71,16 @@ def main():
                     
         case '2':
             while True:
-                dialog = InputDialog(250, 300, ('Height',))
+                dialog = InputDialog(250, 300, (('Height',6.1),))
                 values = dialog.getValues() 
                 
                 if values == None: break 
                     
                 height = values[0]
                 
-                scenary2 = Simulation('Cenário 2', dt=1/60)
+                scenary2 = Simulation('Cenário 2', dt=1/60, friction=0, elacticity=1)
+                
+                recorder = TrajectoryRecorder()
                 
                 parabola = Parabola(Point(8, 1), 0.25, 5, 5)
                 scenary2.addStaticObject(parabola)
@@ -100,13 +101,26 @@ def main():
                             ball.setPos(mouse)
                             ball.setVel(Point(0, 0))
                             ball.setAcl(Point(0,-9.8))
-                
+                            
+                    recorder.record(1/60, ball)
+        
                     scenary2.checkCollisions()
                     scenary2.tick()
                     
-                    if ball.getPos().getY() <= 0:
-                        scenary2.close()
-                     
+                    
+                    if ball.getPos().getY() <= 0 or \
+                    (ball.getSpeed() < 0.17 and ball.getPos().getY() < parabola.getPos().getY() + 1.0001 * ball.getSize()):
+                        scenary2.stopped()
+                        
+                        key = scenary2.checkKey()
+                        mouse = scenary2.checkMouse()
+
+                        if key == 'g':
+                            recorder.save()
+                        if mouse != None:
+                            scenary2.close()
+                            break
+                      
             main()
     
         case '3':
@@ -118,7 +132,7 @@ def main():
             
             wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))
             scenary3.addStaticObject(wall1)
-            wall2 = wall1 = Wall(Point(0.1, 0.1), Point(0.1, 20))
+            wall2 = wall1 = Wall(Point(0.1, 20), Point(0.1, 0.1))
             scenary3.addStaticObject(wall2)
             wall3 = wall2 = wall1 = Wall(Point(15.9, 0.1), Point(15.9, 20))
             scenary3.addStaticObject(wall3)
@@ -136,6 +150,5 @@ def main():
                 
 def randomize(value, percentage = 0.07):
     return value + random.uniform(- value * percentage, value * percentage)
-     
-     
+          
 main()

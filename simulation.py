@@ -8,6 +8,7 @@ from graphics import *
 from gui import *
 import numpy as np
 import time
+from tkinter import filedialog
 
 class Ball:
     
@@ -33,6 +34,9 @@ class Ball:
     
     def getSize(self):
         return self.size
+    
+    def getSpeed(self):
+        return np.sqrt(self.vel.getX() ** 2 + self.vel.getY() ** 2)
     
     def setPos(self, point: Point):
         self.body.move(point.getX() - self.pos.getX(), point.getY() - self.pos.getY())
@@ -162,7 +166,10 @@ class Parabola:
             if dist < best_distance:
                 best_distance = dist
                 contact_point = cp
-
+                
+        if py < self.equationGetY(px) and x0 + x_min < px < x0 + x_max:
+            best_distance = - best_distance        
+                
         return contact_point, best_distance
         
         
@@ -223,46 +230,64 @@ class Wall(Line):
         self.setWidth(5)
         
     def distanceTo(self, point: Point):
+        # 'wall' vector from p1 to p2
+        wx = self.p2.getX() - self.p1.getX()
+        wy = self.p2.getY() - self.p1.getY()
+        
         # vector from p1 to point
-        w = Point(point.getX() - self.p1.getX(), point.getY() - self.p1.getY())
+        px = point.getX() - self.p1.getX()
+        py = point.getY() - self.p1.getY()
         
-        # project of w to vector of wall
-        dot = self.vector.getX() * w.getX() + self.vector.getY() * w.getY() 
-        vector_sq = (self.vector.getX()**2 + self.vector.getY()**2)
-        proj = max(0, min(1, dot / vector_sq))
-
+        dot = wx * px + wy * py
+        magnitude = wx ** 2 + wy ** 2
+        proj = max(0, min(1, dot / magnitude))
+        
         # contact point
-        x = self.p1.getX() + proj * self.vector.getX()
-        y = self.p1.getY() + proj * self.vector.getY()
+        contact_x = self.p1.getX() + proj * wx
+        contact_y = self.p1.getY() + proj * wy
+        contact_point  = Point(contact_x, contact_y)
         
+        # absolute distance
+        dx = point.getX() - contact_x 
+        dy = point.getY() - contact_y
+        abs_distance = np.sqrt(dx**2 + dy**2)
         
-        dx = point.getX() - x 
-        dy = point.getY() - y
-        distance = np.sqrt(dx**2 + dy**2)
+        nx = -wy
+        ny = wx
         
-        return Point(x, y), distance
+        # if dot product is positive then vectors (px, py) and (nx, ny) are pointed in the same direction
+        sign = px * nx + py * ny
+        
+        signed_distance = abs_distance if sign >= 0 else -abs_distance
 
-
+        return contact_point, signed_distance
 # -------------------------------------------------------------------
             
 
 class Simulation(GraphWin):
     
     '''class that draws and contains all object simulation'''
-    '''and process collisions''' # to do!!!
+    '''and process collisions''' 
     
     def __init__(self, title: str, width=1280, height=720, dt = 1/ 60, elacticity=0, friction = 0):
         GraphWin.__init__(self, title, width, height, autoflush=False)
         self.setCoords(0, 0, 16, 9)
+        self.dt0 = dt
         self.dt = dt
         self.dynamic_objects = []
         self.static_objects = []
         self.elacticity = elacticity
-        self.friction = friction
+        self.friction = friction * dt
         
         self.setBackground('white')
         self.btn_quit = Button(Point(0.25, 8.75), Point(1, 8.25), 'QUIT', action=lambda: self.close())
         self.btn_quit.draw(self)
+        
+        self.indicator = Circle(Point(15.75, 8.75), 0.1)
+        self.indicator.setFill('green')
+        self.indicator.setWidth(0)
+        self.indicator.draw(self)
+    
         
 
     def addDynamicObject(self, obj):
@@ -275,6 +300,9 @@ class Simulation(GraphWin):
         obj.draw(self)
         update(1 / self.dt)
         
+    def getDynamicObjects(self):
+        return self.dynamic_objects
+        
     def checkQuitButton(self, mouse):
         self.btn_quit.is_clicked(mouse)
         
@@ -285,11 +313,17 @@ class Simulation(GraphWin):
                 time.sleep(self.dt)
                 update(1 / self.dt)
                 
+    def stopped(self):
+        self.indicator.setFill('red')
+        
     
     def collisionWithStaticObject(self, ball: Ball, object):
-        collision_point, distance = object.distanceTo(ball.getPos())
-        if distance == 0 or distance > ball.getSize(): return 
-            
+        collision_point, distance = object.distanceTo(ball.getPos())        
+        
+        if distance > ball.getSize() or distance == 0: return 
+        
+        if distance < 0: distance = - distance
+                
         # normal vector
         normalx = ball.pos.getX() -  collision_point.getX()
         normaly = ball.pos.getY() -  collision_point.getY()
@@ -334,7 +368,7 @@ class Simulation(GraphWin):
         
         # set new velocity
         ball.setVel(Point(new_vx, new_vy))
-        
+              
         
     def checkCollisions(self):
         for dobj in self.dynamic_objects:
@@ -349,3 +383,34 @@ class Simulation(GraphWin):
                 return
             
             
+            
+class TrajectoryRecorder():
+    def __init__(self):
+        #self.window = sim
+        #self.dynamic_objects = sim.getDynamicObjects()
+        self.data = []
+        self.simulation_time = 0
+        
+    def clear(self):
+        self.data = []
+
+    def record(self, dt, ball: Ball):
+        t = time.localtime()
+        ms = int((time.time() % 1) * 1000)
+        time_str = f'{time.strftime("%H:%M:%S", t)}.{ms:03d} '
+        simulation_time = f'{self.simulation_time:.3f} '
+        x = f'{ball.getPos().getX():.3f} '
+        y = f'{ball.getPos().getY():.3f} '
+        
+        line = time_str + ' | Time: ' + simulation_time + ' | X: ' + x + ' | Y: ' + y
+        
+        self.simulation_time += dt
+        self.data.append(line)
+    
+    def save(self):
+        file = filedialog.asksaveasfile(mode='w', defaultextension=".txt")
+        if file is not None: 
+            file.write("\n".join(["".join(map(str, row)) for row in self.data]))
+            
+        
+    

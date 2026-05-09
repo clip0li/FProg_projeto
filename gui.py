@@ -180,7 +180,7 @@ class InputDialog(GraphWin):
         step = self.height / (len(self.inputs) + 2)
         
         for i, inp in enumerate(self.inputs):
-            text = Text(Point(self.width / 3, (i + 1) * step), f'{inp}: ')
+            text = Text(Point(self.width / 3, (i + 1) * step), f'{inp[0]}: ')
             text.setStyle('bold')
             text.setSize(14)
             text.draw(self)
@@ -223,7 +223,7 @@ class InputDialog(GraphWin):
                         except:
                             return
                         
-                        if 0 < value < 90:
+                        if 0 < value < self.inputs[self.entries.index(entry)][1]:
                             data.append(value)
                     
                     if data != [] and len(data) == len(self.entries):
