@@ -76,8 +76,8 @@ class Ball:
         new_vx = vx + self.acl.getX() * dt
         new_vy = vy + self.acl.getY() * dt
         self.vel = Point(new_vx, new_vy)
-              
-        
+    
+ 
 # -------------------------------------------------------------------
 
 
@@ -326,9 +326,7 @@ class Simulation(GraphWin):
         collision_point, distance = object.distanceTo(ball.getPos())        
         
         if distance > ball.getSize() or distance == 0: return 
-        
-        if distance < 0: distance = - distance
-                
+                                
         # normal vector
         normalx = ball.pos.getX() -  collision_point.getX()
         normaly = ball.pos.getY() -  collision_point.getY()
@@ -342,14 +340,8 @@ class Simulation(GraphWin):
         tangenty = -normalx
         
         # correct position
-        if normaly >= 0:
-            x = collision_point.getX() + normalx * ball.getSize()
-            y = collision_point.getY() + normaly * ball.getSize()
-        else:
-            x = collision_point.getX() - normalx * ball.getSize()
-            y = collision_point.getY() - normaly * ball.getSize()
-        
-            
+        x = collision_point.getX() + normalx * ball.getSize()
+        y = collision_point.getY() + normaly * ball.getSize()   
         ball.setPos(Point(x, y))
             
         # curent velocity
@@ -374,7 +366,53 @@ class Simulation(GraphWin):
         
         # set new velocity
         ball.setVel(Point(new_vx, new_vy))
-              
+        '''
+        print('Collision point: ', collision_point)
+        print('Distance: ', distance, '\n')
+        
+        print('Normal X: ', normalx)
+        print('Normal Y: ', normaly)
+        print('Tangent X: ', tangentx)
+        print('Tangent Y: ', tangenty, '\n')
+        
+        print('Velocity X:', new_vx)
+        print('Velocity Y:', new_vy)
+        print('Velocity n: ', v_normal_new)
+        print('Velocity t: ', v_tangent_new)
+        print('Velocity: ', np.sqrt(new_vx ** 2 + new_vy ** 2), '\n')
+        print('-----------------------------------')
+        '''    
+    def collisionWithDynamicObject(self, ball1: Ball, ball2: Ball):
+        dx = ball2.getPos().getX() - ball1.getPos().getX()
+        dy = ball2.getPos().getY() - ball1.getPos().getY()
+        collision_distance = ball1.getSize() + ball2.getSize()
+
+        if abs(dx) > collision_distance or abs(dy) > collision_distance: return
+        
+        distance =  np.sqrt(dx ** 2 + dy **2)
+        if distance > collision_distance or distance == 0: return
+        
+        # normal vector between two centers
+        nx = dx / distance
+        ny = dy / distance
+        
+        #fix position
+        correction = (collision_distance - distance) / 2
+        #ball1 negative and ball2 positive because normal vector is from ball1 to ball2
+        ball1.setPos(Point(ball1.pos.getX() - nx * correction, ball1.pos.getY() - ny * correction))
+        ball2.setPos(Point(ball2.pos.getX() + nx * correction, ball2.pos.getY() + ny * correction))
+        
+        rel_vx = ball1.getVel().getX() - ball2.getVel().getX()
+        rel_vy = ball1.getVel().getY() - ball2.getVel().getY()
+
+        impulse = rel_vx * nx + rel_vy * ny
+        impulse *= 0.999
+        if impulse < 0:
+            return
+
+        ball1.setVel(Point(ball1.vel.getX() - impulse * nx, ball1.vel.getY() - impulse * ny))
+        ball2.setVel(Point(ball2.vel.getX() + impulse * nx, ball2.vel.getY() + impulse * ny))
+
         
     def checkCollisions(self):
         for dobj in self.dynamic_objects:
@@ -382,11 +420,13 @@ class Simulation(GraphWin):
                 if isinstance(dobj, Ball) and (isinstance(sobj, Parabola) or isinstance(sobj, Wall)):
                     self.collisionWithStaticObject(dobj, sobj)
 
-            dobjects = self.dynamic_objects.copy()
-            dobjects.remove(dobj)
-            
-            for dobj1 in dobjects:
-                return
+        n = len(self.dynamic_objects)
+        for i in range(n):
+            for j in range(i + 1, n): 
+                dobj1 = self.dynamic_objects[i]
+                dobj2 = self.dynamic_objects[j]
+                if isinstance(dobj1, Ball) and isinstance(dobj2, Ball):
+                    self.collisionWithDynamicObject(dobj1, dobj2)
             
             
             
@@ -413,7 +453,8 @@ class TrajectoryRecorder:
     
     def save(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".txt")
-        if file_path == '':  
+
+        if file_path == ():  
             return
         
         with open(file_path, 'w') as file:

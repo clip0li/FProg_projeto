@@ -33,10 +33,13 @@ def main():
                 
                 wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))
                 scenary1.addStaticObject(wall1)
-                wall2 = Wall(Point(0.1, 20), Point(0.1, 0.1))
+                wall2 = Wall(Point(0.1, 8.9), Point(0.1, 0.1))
                 scenary1.addStaticObject(wall2)
-                wall3 = Wall(Point(15.9, 0.1), Point(15.9, 20))
+                wall3 = Wall(Point(15.9, 0.1), Point(15.9, 8.9))
                 scenary1.addStaticObject(wall3)
+                
+                wall4 = Wall(Point(15.9, 8.9), Point(0.1, 8.9))
+                scenary1.addStaticObject(wall4)
                 
                 ball = Ball(Point(3, height+0.1))
                 scenary1.addDynamicObject(ball)
@@ -60,7 +63,7 @@ def main():
                         score += 2
                         scored = True
 
-                    if ball.getPos().getY() < ball.getSize() + 0.11:
+                    if ball.getPos().getY() < ball.getSize() + 0.11: 
                         scenary1.stopped()
                         scenary1.checkCollisions()
 
@@ -74,7 +77,6 @@ def main():
                         recorder.record(1/60, ball)
                         scenary1.checkCollisions()
                         scenary1.tick()
-                    
                     
                 scored = False
                 
@@ -116,7 +118,7 @@ def main():
                     mouse = scenary2.checkMouse()    
                     
                     if mouse != None:
-                        scenary1.checkQuitButton(mouse)
+                        scenary2.checkQuitButton(mouse)
                         
                     if ball.getPos().getY() <= 0 or \
                     (ball.getSpeed() < 0.17 and ball.getPos().getY() < parabola.getPos().getY() + 1.0001 * ball.getSize()):
@@ -124,22 +126,24 @@ def main():
                 
                         if key == 'g':
                             recorder.save()
+                            scenary2.close()
+                            break
                         if mouse != None:
                             scenary2.close()
                             break
                         
+                    
                     else:
                         recorder.record(1/60, ball)
                         scenary2.checkCollisions()
-                        scenary2.tick()
-                      
+                        scenary2.tick()                      
             main()
     
         case '3':
             
             scenary3 = Simulation('Cenário 3', dt=1/60)
             
-            parabola = Parabola(Point(5.1, 0.1), 0.25, 5, 2)
+            parabola = Parabola(Point(5.1, 0.1), 0.25, 5, 5) # 5 2
             scenary3.addStaticObject(parabola)
             
             wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))
@@ -150,16 +154,26 @@ def main():
             scenary3.addStaticObject(wall3)
             wall4 = Wall(Point(15.9, 8.9), Point(0.1, 8.9))
             scenary3.addStaticObject(wall4)
-        
+            
+            ball1 = Ball(Point(1, 8))
+            ball1.setAcl(Point(0, -9.8))
+            scenary3.addDynamicObject(ball1)
+            
+            ball2 = Ball(Point(6, 5), color='blue')
+            ball2.setAcl(Point(0, -9.8))
+            scenary3.addDynamicObject(ball2)
+
             while scenary3.isOpen():
                 mouse = scenary3.checkMouse()
                 if mouse != None:
                     scenary3.checkQuitButton(mouse)
-                       
+                  
+                scenary3.checkCollisions()
+                scenary3.tick()     
             
             
         case '4':
-            scenary4 = Simulation('Cenário 3', dt=1/60, elacticity=1)
+            scenary4 = Simulation('Cenário 3', dt=1/60, elacticity=0.98)
             
             wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))
             scenary4.addStaticObject(wall1)
@@ -170,9 +184,7 @@ def main():
             wall4 = Wall(Point(15.9, 8.9), Point(0.1, 8.9))
             scenary4.addStaticObject(wall4)
             
-            ball = Ball(Point(8, 4.5))
-            scenary4.addDynamicObject(ball)
-            ball.setAcl(Point(0,-0.5))
+            
             
             while scenary4.isOpen():
                 mouse = scenary4.checkMouse()
@@ -181,8 +193,15 @@ def main():
                 if mouse != None:
                     scenary4.checkQuitButton(mouse)
                 
+                    for _ in range(100):    
+                        color = color_rgb(random.randint(0,255), random.randint(0,255), random.randint(0,255))
+                        ball = Ball(Point(random.uniform(1,15),random.uniform(1,8)), color=color)
+                        v = 7
+                        ball.setVel(Point(random.uniform(-v,v), random.uniform(-v,v)))
+                        scenary4.addDynamicObject(ball) 
                 scenary4.checkCollisions()
                 scenary4.tick()
+                       
                        
             main()    
                 
