@@ -282,7 +282,7 @@ class Simulation(GraphWin):
         self.btn_quit = Button(Point(0.25, 8.75), Point(1, 8.25), 'QUIT', action=lambda: self.close())
         self.btn_quit.draw(self)
         
-        self.indicator = Circle(Point(15.75, 8.75), 0.1)
+        self.indicator = Circle(Point(15.7, 8.7), 0.1)
         self.indicator.setFill('green')
         self.indicator.setWidth(0)
         self.indicator.draw(self)
@@ -413,7 +413,7 @@ class TrajectoryRecorder:
     
     def save(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".txt")
-        if file_path == None:  
+        if file_path == '':  
             return
         
         with open(file_path, 'w') as file:
@@ -425,7 +425,4 @@ class TrajectoryRecorder:
             file.write("Elapsed Time: " + " ".join(f"{t:.3f}" for t in self.time_log) + "\n")
             file.write("X Positions:  " + " ".join(f"{x:.3f}" for x in self.x_log) + "\n")
             file.write("Y Positions:  " + " ".join(f"{y:.3f}" for y in self.y_log) + "\n")
-        
-            
-        
-    
+ 
