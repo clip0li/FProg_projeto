@@ -183,26 +183,57 @@ class Hoop:
         self.pos = pos
         self.width = width
         self.size = size 
+        self.p1 = Point(pos.getX() - self.width / 2 + self.size, pos.getY())
+        self.p2 = Point(pos.getX() + self.width / 2 - self.size, pos.getY())
         
     def draw(self, window: GraphWin):
-        w1 = self.pos.getX() - self.width / 2 - self.size
-        w2 = self.pos.getX() + self.width / 2 + self.size
+        ring1 = Circle(self.p1, self.size)
+        ring1.setFill('powderblue')
+        ring1.setWidth(1)
+        ring1.draw(window)
         
-        circle1 = Circle(Point(w1, self.pos.getY()), self.size)
-        circle1.setFill('powderblue')
-        circle1.setWidth(1)
-        circle1.draw(window)
+        ring2 = Circle(self.p2, self.size)
+        ring2.setFill('powderblue')
+        ring2.setWidth(1)
+        ring2.draw(window)
         
-        circle2 = Circle(Point(w2, self.pos.getY()), self.size)
-        circle2.setFill('powderblue')
-        circle2.setWidth(1)
-        circle2.draw(window)
-        
-        line1 = Line(Point(w1, self.pos.getY() + self.size), Point(w2, self.pos.getY() + self.size))
+        line1 = Line(Point(self.p1.getX(), self.p1.getY() + self.size), Point(self.p2.getX(), self.p2.getY() + self.size))
         line1.draw(window)
         
-        line2 = Line(Point(w1, self.pos.getY() - self.size), Point(w2, self.pos.getY() - self.size))
-        line2.draw(window)
+        line2 = Line(Point(self.p1.getX(), self.p1.getY() - self.size), Point(self.p2.getX(), self.p2.getY() - self.size))
+        line2.draw(window)    
+          
+    def distanceTo(self, point: Point):
+        px = point.getX()
+        py = point.getY()
+        
+        dist1 = np.sqrt((px - self.p1.getX())**2 + (py - self.p1.getY())**2)
+        dist_ring1 = dist1 - self.size
+
+        dist2 = np.sqrt((px - self.p2.getX())**2 + (py - self.p2.getY())**2)
+        dist_ring2 = dist2 - self.size
+        
+        if dist_ring1 < dist_ring2:
+            best_dist = dist_ring1
+            
+            if dist1 > 0:
+               contact_point = Point(self.p1.getX() + (px - self.p1.getX()) * self.size / dist1, 
+                                     self.p1.getY() + (py - self.p1.getY()) * self.size / dist1) 
+            else:
+               contact_point = Point(self.p1.getX(), self.p1.getY() + self.size)
+            
+        else:
+            best_dist = dist_ring2
+            
+            if dist2 > 0:
+                contact_point = Point(self.p2.getX() + (px - self.p2.getX()) * self.size / dist2, 
+                                      self.p2.getY() + (py - self.p2.getY()) * self.size / dist2)
+            else:
+                contact_point = Point(self.p2.getX(),self.p2.getY() + self.size)
+
+
+        return contact_point, best_dist
+        
         
     def is_scored(self, pos: Point):
         '''returns True if point is within rectangle between two circles'''
@@ -288,7 +319,6 @@ class Simulation(GraphWin):
         self.indicator.draw(self)
     
         
-
     def addDynamicObject(self, obj):
         self.dynamic_objects.append(obj)
         obj.draw(self)
@@ -417,9 +447,10 @@ class Simulation(GraphWin):
     def checkCollisions(self):
         for dobj in self.dynamic_objects:
             for sobj in self.static_objects:
-                if isinstance(dobj, Ball) and (isinstance(sobj, Parabola) or isinstance(sobj, Wall)):
-                    self.collisionWithStaticObject(dobj, sobj)
-
+                if isinstance(dobj, Ball):
+                    if (isinstance(sobj, Parabola) or isinstance(sobj, Wall)) or isinstance(sobj, Hoop):  
+                        self.collisionWithStaticObject(dobj, sobj)
+                        
         n = len(self.dynamic_objects)
         for i in range(n):
             for j in range(i + 1, n): 
@@ -427,7 +458,7 @@ class Simulation(GraphWin):
                 dobj2 = self.dynamic_objects[j]
                 if isinstance(dobj1, Ball) and isinstance(dobj2, Ball):
                     self.collisionWithDynamicObject(dobj1, dobj2)
-            
+                
             
             
 import time

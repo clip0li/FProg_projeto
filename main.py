@@ -143,8 +143,14 @@ def main():
             
             scenary3 = Simulation('Cenário 3', dt=1/60)
             
-            parabola = Parabola(Point(5.1, 0.1), 0.25, 5, 5) # 5 2
+            parabola = Parabola(Point(5.1, 0.1), 0.25, 5, 3.5) 
             scenary3.addStaticObject(parabola)
+            
+            hoop = Hoop(Point(13.9, 5), 1, 0.1)
+            scenary3.addStaticObject(hoop)
+            
+            stickman = Stickman(Point(13, 0.15), 3)
+            scenary3.addStaticObject(stickman)
             
             wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))
             scenary3.addStaticObject(wall1)
@@ -159,7 +165,7 @@ def main():
             ball1.setAcl(Point(0, -9.8))
             scenary3.addDynamicObject(ball1)
             
-            ball2 = Ball(Point(6, 5), color='blue')
+            ball2 = Ball(Point(12, 2), color='blue')
             ball2.setAcl(Point(0, -9.8))
             scenary3.addDynamicObject(ball2)
 

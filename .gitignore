@@ -23,6 +23,6 @@ Thumbs.db
 .DS_Store
 
 # Other
-.pdf
-.zip
-.txt
+*.pdf
+*.zip
+*.txt
