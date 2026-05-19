@@ -10,19 +10,24 @@ import numpy as np
 import time
 from tkinter import filedialog
 
+COLOR_BALL = 'brown3'
+COLOR_SURFACE = 'gray80'
+COLOR_HOOP = 'powderblue'
+COLOR_WALL = 'black'
+
 class Ball:
     
     '''Creates ball(cirlcle projectile)'''
     '''Properties: color, size, position, velocity, acceleration'''
     
-    def __init__(self, pos0: Point, size=0.2, color='brown3'):
+    def __init__(self, pos0: Point, size=0.2, color=COLOR_BALL):
         self.pos = pos0
         self.size = size
         self.vel = Point(0, 0)
         self.acl = Point(0, 0)
         self.color = color
         self.body = None  
-    
+            
     def getPos(self):
         return self.pos
     
@@ -54,9 +59,7 @@ class Ball:
         self.body.setOutline(self.color)
         self.body.draw(window)
 
-    def step(self, dt):
-        '''advance properties by time step st'''
-        '''sets position with x = v * dt formula and velocity with v = a * dt formlula'''
+    def step(self, dt):        
         # current postion
         x = self.pos.getX() 
         y = self.pos.getY()
@@ -80,97 +83,6 @@ class Ball:
  
 # -------------------------------------------------------------------
 
-
-class Parabola:
-    
-    '''Draws parabola from vertice position, curvature(a) and centered width'''
-    
-    def __init__(self, pos:Point, curvature, left_width, right_width):
-        self.pos = pos
-        self.curvature = curvature
-        self.left_width = left_width
-        self.right_width = right_width
-        self.width = left_width + right_width
-        
-    def getPos(self):
-        return self.pos
-        
-    def draw(self, window: GraphWin, lines = 100):
-        x0 = self.pos.getX() - self.left_width
-        step = self.width / lines
-        previous_point = Point(x0, self.equationGetY(x0))
-        
-        for i in range(1, lines + 1):
-            x = x0 + i * step
-            y = self.equationGetY(x)
-            
-            point = Point(x, y)
-            
-            line = Line(previous_point, point)
-            line.setWidth(3)
-            line.draw(window)
-            
-            previous_point = point
-        
-        
-    def equationGetY(self, x):
-        '''returns y (relative to window) of point of parabola with specific x'''
-        return self.curvature * (x - self.pos.getX()) ** 2 + self.pos.getY()
-    
-    def equationGetX(self, y):
-        '''returns x (relative to vertice) of point of parabola with specific y'''
-        return - np.sqrt(y / self.curvature)
-    
-    def distanceTo(self, point):
-        '''calculates distance from parabola in space to arbitrary point'''
-        '''does it by calculating normal to parabola that goes trough this point'''
-        '''uses deducted formula(in polynomial form) and filters all real roots. then finds nearst solution among them'''
-        '''returns point of intersection normal-parabola and distance'''
-        px = point.getX()
-        py = point.getY()
-        
-        a = self.curvature
-        x0 = self.pos.getX()
-        y0 = self.pos.getY()
-        
-        nx = px - x0
-        ny = py - y0
-        
-        x_min = -self.left_width
-        x_max = self.right_width
-        
-        # coefficients of polinomial of 3rd degree
-        coeffs = [2*a**2, 0, 1 - 2*a*ny, -nx]
-        
-        # roots of polynomial with those coeffs
-        roots = np.roots(coeffs)
-        
-        # choosing only real roots
-        real_roots = [r.real for r in roots if abs(r.imag) < 1e-9]
-        candidates = []
-        
-        for k in real_roots:
-            if x_min <= k <= x_max:
-                candidates.append(Point(k + x0, a * k**2 + y0))
-                
-        # limits
-        candidates.append(Point(x0 + x_min, self.equationGetY(x0 + x_min)))
-        candidates.append(Point(x0 + x_max, self.equationGetY(x0 + x_max)))
-        
-        contact_point = None
-        best_distance = float('inf')
-        
-        for cp in candidates:
-            dist = np.sqrt((cp.getX() - px)**2 + (cp.getY() - py)**2)
-            if dist < best_distance:
-                best_distance = dist
-                contact_point = cp
-                
-        if py < self.equationGetY(px) and x0 + x_min < px < x0 + x_max:
-            best_distance = - best_distance        
-                
-        return contact_point, best_distance
-        
         
 # -------------------------------------------------------------------
 
@@ -188,12 +100,12 @@ class Hoop:
         
     def draw(self, window: GraphWin):
         ring1 = Circle(self.p1, self.size)
-        ring1.setFill('powderblue')
+        ring1.setFill(COLOR_HOOP)
         ring1.setWidth(1)
         ring1.draw(window)
         
         ring2 = Circle(self.p2, self.size)
-        ring2.setFill('powderblue')
+        ring2.setFill(COLOR_HOOP)
         ring2.setWidth(1)
         ring2.draw(window)
         
@@ -252,12 +164,13 @@ class Hoop:
 
 class Wall(Line):
     def __init__(self, p1: Point, p2: Point):
-        Line.__init__(self, p1, p2)
+        super().__init__(p1, p2)
         self.p1 = p1
         self.p2 = p2
         self.vector = Point(self.p2.getX() - self.p1.getX(), self.p2.getY() - self.p1.getY())
         
         self.setWidth(5)
+        self.setFill(COLOR_WALL)
         
     def distanceTo(self, point: Point):
         # 'wall' vector from p1 to p2
@@ -292,6 +205,175 @@ class Wall(Line):
 
         return contact_point, signed_distance
 # -------------------------------------------------------------------
+
+class Surface2D(Polygon):
+    def __init__(self, formula, start: int, end: int, resolution=100):
+        self.formula = formula
+        self.resolution = resolution
+        self.start = start
+        self.end = end
+        
+        points = []
+        points.append(Point(start, 0.1))
+        points.append(Point(start, formula(start)))
+        for i in range(1, resolution + 1):
+            x = start + i * (abs(end - start) / resolution)
+            y = self.formula(x)
+            
+            points.append(Point(x,y))         
+        points.append(Point(end, formula(end)))
+        points.append(Point(end, 0.1))
+        
+        super().__init__(points)
+    
+        self.setFill(COLOR_SURFACE)
+        self.setOutline(COLOR_WALL)
+        self.setWidth(3)
+            
+    def contains(self, point: Point):
+        # point
+        px = point.getX()
+        py = point.getY()
+        
+        # inicial value
+        inside = False
+        
+        # vertices
+        n = len(self.points)
+        
+        # last vertice
+        j = n - 1
+        
+        for i in range(n):
+            xi = self.points[i].getX()
+            yi = self.points[i].getY()
+            xj = self.points[j].getX()
+            yj = self.points[j].getY()
+
+            # does horizontal ray from (px, py) cross edge ij?
+            if (yi > py) != (yj > py):
+                x_intersect = (xj - xi) * (py - yi) / (yj - yi) + xi
+                if px < x_intersect:
+                    inside = not inside
+                    
+            # next vertice        
+            j = i
+        return inside
+ 
+    def distanceTo(self, point: Point):
+        # point
+        px = point.getX()
+        py = point.getY()
+        
+        # inicial values
+        best_dist = float('inf')
+        contact_point = None
+        
+        # vertices
+        n = len(self.points)
+        
+        for i in range(n):
+            # vertice 1
+            ax = self.points[i].getX()
+            ay = self.points[i].getY()
+            
+            # vertice 2
+            bx = self.points[(i+1) % n].getX()
+            by = self.points[(i+1) % n].getY()
+            
+            # vector between vertices
+            dx = bx - ax
+            dy = by - ay
+            
+            # squares length
+            length_sq = dx ** 2 + dy ** 2
+            
+            # if points repeating
+            if length_sq == 0:
+                t = 0
+            else:
+                t = ((px - ax) * dx + (py - ay) * dy) / length_sq
+                
+                # limit vector in edge
+                t = max(0.0, min(1.0, t))
+            
+            # contact point
+            cx = ax + t * dx
+            cy = ay + t * dy
+            
+            dist = np.sqrt((px-cx) ** 2 + (py - cy) ** 2)
+            
+            # comparing with best distance
+            if dist < best_dist:
+                best_dist = dist
+                contact_point = Point(cx, cy)
+
+        # detecting if point is within polygon
+        signed_dist = best_dist if not self.contains(point) else - best_dist
+            
+        return contact_point, signed_dist
+ 
+class Surface3D:
+    def __init__(self, pos0: Point, formula, resolution: int):
+        self.pos0 = pos0
+        self.formula = formula
+        self.resolution = resolution
+        self.gradient_start = (16, 44, 15)       
+        self.gradient_end = (140, 210, 50)       
+
+    def draw(self, window: GraphWin):
+        xlow, yhigh = window.toWorld(0, 0)
+        xhigh, ylow = window.toWorld(window.getWidth(), window.getHeight())
+        width = xhigh - xlow
+        height = yhigh - ylow
+        
+        x0 = self.pos0.getX()
+        y0 = self.pos0.getY()
+        
+        x = np.linspace(x0 - width / 2, x0 + width / 2, self.resolution + 1)
+        y = np.linspace(y0 - height / 2, y0 + height / 2, self.resolution + 1)
+        X, Y = np.meshgrid(x, y)
+        Z = np.asarray(self.formula(X - x0, Y - y0), dtype=float)
+        
+        z_range = Z.max() - Z.min()
+        if z_range == 0: z_range = 1  
+            
+        steps = 50
+        palette = []
+        
+        for i in range(steps):
+            t = i / (steps - 1)
+            # Linear interpolation (LERP)
+            r = int(self.gradient_start[0] + (self.gradient_end[0] - self.gradient_start[0]) * t)
+            g = int(self.gradient_start[1] + (self.gradient_end[1] - self.gradient_start[1]) * t)
+            b = int(self.gradient_start[2] + (self.gradient_end[2] - self.gradient_start[2]) * t)
+            palette.append(color_rgb(r, g, b))
+        
+        for i in range(self.resolution):
+            for j in range(self.resolution):
+                p1 = Point(X[i, j], Y[i, j])
+                p2 = Point(X[i+1, j+1], Y[i+1, j+1])
+                
+                rect = Rectangle(p1, p2)
+                                
+                norm_z = (Z[i, j] - Z.min()) / z_range
+                color_idx = int(norm_z * (steps - 1))
+                color_idx = max(0, min(color_idx, steps - 1))
+                
+                color = palette[color_idx]
+                
+                rect.setFill(color)
+                rect.setOutline(color)  
+                rect.draw(window)
+                
+    def getGradient(self, point: Point):
+        px, py = point.getX(), point.getY()
+        h = 1e-5
+        
+        df_dx = (self.formula(px + h, py) - self.formula(px - h, py)) / (2 * h)
+        df_dy = (self.formula(px, py + h) - self.formula(px, py - h)) / (2 * h)
+    
+        return Point(df_dx, df_dy) 
             
 
 class Simulation(GraphWin):
@@ -308,6 +390,7 @@ class Simulation(GraphWin):
         self.static_objects = []
         self.elacticity = elacticity
         self.friction = friction 
+        self.frozen = False
         
         self.setBackground('white')
         self.btn_quit = Button(Point(0.25, 8.75), Point(1, 8.25), 'QUIT', action=lambda: self.close())
@@ -336,6 +419,7 @@ class Simulation(GraphWin):
         self.btn_quit.is_clicked(mouse)
         
     def tick(self):
+        if self.frozen: return
         tick_start = time.perf_counter()
         for obj in self.dynamic_objects:
             if isinstance(obj, Ball):
@@ -348,15 +432,22 @@ class Simulation(GraphWin):
         if remaining > 0:
             time.sleep(remaining)
                 
-    def stopped(self):
+    def freeze(self):
         self.indicator.setFill('red')
+        self.frozen = True
+
+    def defreeze(self): 
+        self.frozen = False
+        self.indicator.setFill('green')
         
+    def isFrozen(self):
+        return self.frozen
     
-    def collisionWithStaticObject(self, ball: Ball, object):
-        collision_point, distance = object.distanceTo(ball.getPos())        
+    def collisionWithStaticObject(self, ball: Ball, object):        
+        collision_point, distance = object.distanceTo(ball.getPos())      
         
         if distance > ball.getSize() or distance == 0: return 
-                                
+                                        
         # normal vector
         normalx = ball.pos.getX() -  collision_point.getX()
         normaly = ball.pos.getY() -  collision_point.getY()
@@ -381,6 +472,9 @@ class Simulation(GraphWin):
         v_normal = vx * normalx + vy * normaly    # projection of velocity on normal unit vector
         v_tangent = vx * tangentx + vy * tangenty # projection of velocity on tangent unit vector
         
+        # skip if ball moving from the surface
+        if v_normal >= 0: return
+        
         # current acceleration
         ax = ball.getAcl().getX()
         ay = ball.getAcl().getY()
@@ -396,23 +490,10 @@ class Simulation(GraphWin):
         
         # set new velocity
         ball.setVel(Point(new_vx, new_vy))
-        '''
-        print('Collision point: ', collision_point)
-        print('Distance: ', distance, '\n')
-        
-        print('Normal X: ', normalx)
-        print('Normal Y: ', normaly)
-        print('Tangent X: ', tangentx)
-        print('Tangent Y: ', tangenty, '\n')
-        
-        print('Velocity X:', new_vx)
-        print('Velocity Y:', new_vy)
-        print('Velocity n: ', v_normal_new)
-        print('Velocity t: ', v_tangent_new)
-        print('Velocity: ', np.sqrt(new_vx ** 2 + new_vy ** 2), '\n')
-        print('-----------------------------------')
-        '''    
+   
     def collisionWithDynamicObject(self, ball1: Ball, ball2: Ball):
+        if self.frozen: return
+        
         dx = ball2.getPos().getX() - ball1.getPos().getX()
         dy = ball2.getPos().getY() - ball1.getPos().getY()
         collision_distance = ball1.getSize() + ball2.getSize()
@@ -443,13 +524,21 @@ class Simulation(GraphWin):
         ball1.setVel(Point(ball1.vel.getX() - impulse * nx, ball1.vel.getY() - impulse * ny))
         ball2.setVel(Point(ball2.vel.getX() + impulse * nx, ball2.vel.getY() + impulse * ny))
 
+    '''!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'''
+    def surfaceCollision(self,ball: Ball, surface: Surface3D, ):
+        if self.frozen: return
+        pass
         
     def checkCollisions(self):
+        if self.frozen: return
+        
         for dobj in self.dynamic_objects:
             for sobj in self.static_objects:
                 if isinstance(dobj, Ball):
-                    if (isinstance(sobj, Parabola) or isinstance(sobj, Wall)) or isinstance(sobj, Hoop):  
+                    if (isinstance(sobj, Wall)) or isinstance(sobj, Hoop) or isinstance(sobj, Surface2D):  
                         self.collisionWithStaticObject(dobj, sobj)
+                    if isinstance(sobj, Surface3D):
+                        self.surfaceCollision(dobj, sobj)
                         
         n = len(self.dynamic_objects)
         for i in range(n):
@@ -458,34 +547,39 @@ class Simulation(GraphWin):
                 dobj2 = self.dynamic_objects[j]
                 if isinstance(dobj1, Ball) and isinstance(dobj2, Ball):
                     self.collisionWithDynamicObject(dobj1, dobj2)
-                
-            
-            
+
+
+    
+        
+         
 import time
 from tkinter import filedialog
 
 class TrajectoryRecorder:
-    def __init__(self):
-        self.clear() 
-
-    def clear(self):
+    def __init__(self, n: int, dt):
+        self.n = n
+        self.dt = dt
         self.t0 = time.time()
         self.elapsed_time = 0
         self.time_log = []
-        self.x_log = []
-        self.y_log = []
-
-    def record(self, dt, ball):
-        self.time_log.append(self.elapsed_time)
-        self.elapsed_time += dt
         
-        self.x_log.append(ball.getPos().getX())
-        self.y_log.append(ball.getPos().getY())
-    
+        # [[ball 1], [ball2], ...]
+        self.x_log = [[] for i in range(n)]
+        self.y_log = [[] for i in range(n)]
+        
+    def record(self, balls):
+        self.time_log.append(self.elapsed_time)
+        self.elapsed_time += self.dt
+        
+        for i in range(len(balls)):
+            if len(balls) == self.n:
+              self.x_log[i].append(balls[i].getPos().getX())
+              self.y_log[i].append(balls[i].getPos().getY())  
+            
     def save(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".txt")
 
-        if file_path == ():  
+        if not file_path:  
             return
         
         with open(file_path, 'w') as file:
@@ -495,6 +589,9 @@ class TrajectoryRecorder:
             
             file.write(f"Start Time: {t0_str}\n")
             file.write("Elapsed Time: " + " ".join(f"{t:.3f}" for t in self.time_log) + "\n")
-            file.write("X Positions:  " + " ".join(f"{x:.3f}" for x in self.x_log) + "\n")
-            file.write("Y Positions:  " + " ".join(f"{y:.3f}" for y in self.y_log) + "\n")
+            
+            for i in range(self.n):
+                file.write(f"Ball {i+1}: \n")
+                file.write(" X Positions:  " + " ".join(f"{x:.3f}" for x in self.x_log[i]) + "\n")
+                file.write(" Y Positions:  " + " ".join(f"{y:.3f}" for y in self.y_log[i]) + "\n")
  

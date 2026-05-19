@@ -93,73 +93,49 @@ class Stickman:
     def __init__(self, pos: Point, height):
         self.pos = pos
         self.height = height
-        self.body_angle = 90
         
     def draw(self, window: GraphWin):
         x = self.pos.getX()
         y = self.pos.getY()
+        
         h = self.height
+        line_width = 5
+        color = 'orange'
         
-        angle = self.body_angle * np.pi / 180
+        head = Circle(Point(x, y + h * 0.85), h * 0.15)
+        head.setWidth(line_width)
+        head.setOutline(color)
+        head.draw(window)
         
-        cos = np.cos(angle)
-        sin = np.sin(angle)
-        
-        head_size = 0.1 * h
-        hip_size = 0.2 * self.height
-        shoulders_size = 1.5 * hip_size
-        foot_size = 0.1 * self.height
-        
-        leg_point = Point(x, y + 0.4 * h)
-        arms_point = Point(x + 0.4 * h * cos, leg_point.getY() + 0.4 * h * sin)
-        head_point = Point(arms_point.getX() +  head_size * cos, arms_point.getY() +  head_size * sin)
-        
-        a_cos = np.cos(angle + np.pi / 2)
-        a_sin = np.sin(angle + np.pi / 2)
-        left_arm_point = Point(arms_point.getX() - shoulders_size / 2 * a_cos, arms_point.getY() - shoulders_size / 2 * a_sin)
-        right_arm_point = Point(arms_point.getX() + shoulders_size / 2 * a_cos, arms_point.getY() + shoulders_size / 2 * a_sin)
-        
-        
-        # hips
-        hips = Line(Point(leg_point.getX() - hip_size / 2, leg_point.getY()), Point(leg_point.getX() + hip_size / 2, leg_point.getY()))
-        hips.setWidth(2)
-        hips.draw(window)
-        
-        # left leg
-        left_leg = Line(Point(leg_point.getX() - hip_size / 2, leg_point.getY()), Point(leg_point.getX() - hip_size / 4, y))
-        left_leg.setWidth(2)
-        left_leg.draw(window)
-        
-        # right leg
-        right_leg = Line(Point(leg_point.getX() + hip_size / 2, leg_point.getY()), Point(leg_point.getX() + hip_size / 4, y))
-        right_leg.setWidth(2)
-        right_leg.draw(window)
-        
-        # left foot 
-        left_foot = Line(Point(leg_point.getX() - hip_size / 4, y), Point(leg_point.getX() - hip_size / 4 - foot_size, y))
-        left_foot.setWidth(3)
-        left_foot.draw(window)
-        
-        # right foot
-        right_foot = Line(Point(leg_point.getX() + hip_size / 4, y), Point(leg_point.getX() + hip_size / 4 + foot_size, y))
-        right_foot.setWidth(3)
-        right_foot.draw(window)
-        
-        # body
-        body = Line(leg_point, arms_point)
-        body.setWidth(2)
+        body = Line(Point(x, y + h * 0.4), Point(x, y + h * 0.7))
+        body.setWidth(line_width)
+        body.setFill(color)
+        body.setOutline(color)
         body.draw(window)
         
-        # shoulders
-        shoulders = Line(left_arm_point, right_arm_point)
-        shoulders.setWidth(2)
-        shoulders.draw(window)
+        left_leg = Line(Point(x, y + h * 0.4), Point(x - 0.2, y))
+        left_leg.setWidth(line_width)
+        left_leg.setFill(color)
+        left_leg.setOutline(color)
+        left_leg.draw(window)
         
-        # head
-        head = Circle(head_point, head_size)
-        head.setWidth(2)
-        head.setFill('white')
-        head.draw(window)
+        right_leg = Line(Point(x, y + h * 0.4), Point(x + 0.2, y))
+        right_leg.setWidth(line_width)
+        right_leg.setFill(color)
+        right_leg.setOutline(color)
+        right_leg.draw(window)
+        
+        left_arm = Line(Point(x, y + h * 0.7), Point(x - 0.4, y + h * 0.4))
+        left_arm.setWidth(line_width)
+        left_arm.setFill(color)
+        left_arm.setOutline(color)
+        left_arm.draw(window)
+        
+        right_arm = Line(Point(x, y + h * 0.7), Point(x + 0.4, y + h * 0.4))
+        right_arm.setWidth(line_width)
+        right_arm.setFill(color)
+        right_arm.setOutline(color)
+        right_arm.draw(window)
         
         
 
@@ -168,7 +144,11 @@ class Stickman:
 
 
 class InputDialog(GraphWin):
-    def __init__(self, width, height, inputs=()):
+    '''
+    inputs = (Name: str, min: int, max: int)
+    '''
+    
+    def __init__(self, width: int, height: int, inputs=()):
         self.width = width
         self.height = height
         self.inputs = inputs
@@ -179,8 +159,8 @@ class InputDialog(GraphWin):
         
         step = self.height / (len(self.inputs) + 2)
         
-        for i, inp in enumerate(self.inputs):
-            text = Text(Point(self.width / 3, (i + 1) * step), f'{inp[0]}: ')
+        for i, input in enumerate(self.inputs):
+            text = Text(Point(self.width / 3, (i + 1) * step), f'{input[0]}: ')
             text.setStyle('bold')
             text.setSize(14)
             text.draw(self)
@@ -221,19 +201,23 @@ class InputDialog(GraphWin):
                         
                         try:
                             value = float(value)
+                            
+                            min = self.inputs[self.entries.index(entry)][1]
+                            max = self.inputs[self.entries.index(entry)][2]
+                            
+                            if min <= value <= max:
+                                data.append(value)
+                            else:
+                                raise
                         except:
-                            return
-                        
-                        if 0 < value < self.inputs[self.entries.index(entry)][1]:
-                            data.append(value)
-                        else:
                             entry.setTextColor('red')
                             
-                    
+                       
                     if data != [] and len(data) == len(self.entries):
                         self.close()
                         return data
             
+            # reset entry color when any ky clicked 
             key = self.checkKey()
             if key != '':
                 for entry in self.entries:
@@ -247,7 +231,7 @@ class Counter:
     '''Displays text with number to count varibales such as score and lives'''
     '''Arguments: position, text as string and initial value of variable'''
     
-    def __init__(self, pos, text_str, value=0):
+    def __init__(self, pos: Point, text_str: str, value=0):
         self.pos = pos
         self.text_str = text_str
         self.value = value
