@@ -3,10 +3,12 @@ from gui import *
 from simulation import *
 import random
 
-def main():
-    slct_win = SelectionWindow(400)
+slct_win = SelectionWindow(400)
 
+def main():
     match slct_win.select():
+        
+# ///        
         case '1':
             score_value = 0
 
@@ -22,7 +24,7 @@ def main():
                 angle = randomize(angle, 0.05)
 
                 # scenario
-                scenario1 = Simulation('Cenário 1', elacticity=0.5, friction=0.5)
+                scenario1 = Simulation('Cenário 1', elacticity=0.85, friction=0.5)
                 recorder = TrajectoryRecorder(1, dt=1/60)
 
                 # counters
@@ -55,6 +57,7 @@ def main():
                 vy = vel * np.sin(np.radians(angle))
                 ball.setVel(Point(vx, vy))
                 ball.setAcl(Point(0, -9.8))
+                
 
                 # main scenario loop
                 scored = False
@@ -75,8 +78,7 @@ def main():
                     if ball.getPos().getY() < ball.getSize() + 0.11: 
                             
                         scenario1.freeze()
-                        scenario1.checkCollisions()
-
+                        
                         if key == 'g':
                             recorder.save()
                             scenario1.close()
@@ -86,14 +88,16 @@ def main():
                         
                     else:
                         recorder.record((ball,))
-                        scenario1.checkCollisions()
-                        scenario1.tick()
+                        
+                    scenario1.checkCollisions()
+                    scenario1.tick()    
                     
+
                 scored = False
                 
             main()    
                 
-                    
+  # ///                   
         case '2':
             while True:
                 # dialog window
@@ -119,6 +123,7 @@ def main():
                        
                 # ball
                 ball = Ball(Point(x, y))
+                ball.setVel(Point(0,0))
                 ball.setAcl(Point(0, -9.8))
                 scenario2.addDynamicObject(ball)
                 
@@ -130,29 +135,33 @@ def main():
                     if mouse != None:
                         scenario2.checkQuitButton(mouse)
                                                                 
-                    if ball.getPos().getY() < 1.2001 and ball.getSpeed() < 0.164 and ball.getPos().getY() > 0:
-                        scenario2.stop()
+                    if ball.getPos().getY() < 1.2001 and ball.getSpeed() < 0.164 or ball.getPos().getY() < 0:
+                        scenario2.freeze()
                 
                         if key == 'g':
                             recorder.save()
                             scenario2.close()
                             break
+                        
                         if mouse != None:
-                            scenario2.close()
-                            break
-                        
+                            scenario2.defreeze()
+                            ball.setPos(mouse)
+                            ball.setVel(Point(0,0))
+                            ball.setAcl(Point(0, -9.8))
+                               
                     else:
-                        recorder.record((ball,))
-                        scenario2.checkCollisions()                  
-                        scenario2.tick()    
-                        
+                        recorder.record((ball,))                   
+                            
+                    scenario2.checkCollisions()   
+                    scenario2.tick() 
             main()
-    
+            
+# ///   
         case '3':
             score_value = 0
-            lives_value = 3
+            lives_value = 5
             
-            while lives_value > 0 and score_value < 5:
+            while lives_value > 0:
                 # dialog window
                 dialog = InputDialog(250, 300, (('Velocity',0, 20), ('Angle',0, 90)))
                 values = dialog.getValues() 
@@ -202,7 +211,7 @@ def main():
                 scenario3.addDynamicObject(ball1)
                 
                 # ball 2
-                ball2 = Ball(Point(12, 1), color='blue')
+                ball2 = Ball(Point(12.5, 2), color='blue')
                 ball2.setAcl(Point(0, -9.8))
                 ball2.setVel(Point(-vel * np.cos(np.radians(angle)), 
                                    vel * np.sin(np.radians(angle))))
@@ -228,7 +237,7 @@ def main():
                         lives_value -= 1
     
 
-                    if ball1.getSpeed() < 0.5 and ball1.getPos().getY() < 5:  
+                    if ball1.getSpeed() < 0.5 and ball1.getPos().getY() < 5 and not scenario3.isFrozen:  
                         scenario3.freeze()
                         scenario3.checkCollisions()
                         
@@ -238,13 +247,13 @@ def main():
                             
                     else:
                         recorder.record((ball1, ball2))
-                        scenario3.tick()
                         
                     scenario3.checkCollisions()
-
+                    scenario3.tick()
+                    
             main()   
             
-            
+# ///
         case '4':
             while True:
                 dialog = InputDialog(250, 300, (('Velocity',0, 10), ('Angle',-90, 90),))
@@ -258,7 +267,7 @@ def main():
                 surface = Surface3D(pos0 = Point(8, 4.5), 
                                 formula = lambda x, y: 1 * np.sin(0.4 * x) +  1* np.cos(0.5 * y),
                                 resolution=70)
-                
+            
                 scenario4.addStaticObject(surface)
                     
                 wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))

@@ -1,7 +1,6 @@
 '''
 istxxxxxxx, istxxxxxxx
-File responsoble of anything related to simulation process, calcualtions and
-Contains Ball, Parabola, Hoop, Simulation
+File responsible of anything related to simulation process, calcualtions and trajectory recording
 '''
 
 from graphics import *
@@ -10,7 +9,6 @@ import numpy as np
 import time
 from tkinter import filedialog
 
-COLOR_BALL = 'brown3'
 COLOR_SURFACE = 'gray80'
 COLOR_HOOP = 'powderblue'
 COLOR_WALL = 'black'
@@ -20,7 +18,7 @@ class Ball:
     '''Creates ball(cirlcle projectile)'''
     '''Properties: color, size, position, velocity, acceleration'''
     
-    def __init__(self, pos0: Point, size=0.2, color=COLOR_BALL):
+    def __init__(self, pos0: Point, size=0.2, color='brown3'):
         self.pos = pos0
         self.size = size
         self.vel = Point(0, 0)
@@ -79,10 +77,6 @@ class Ball:
         new_vx = vx + self.acl.getX() * dt
         new_vy = vy + self.acl.getY() * dt
         self.vel = Point(new_vx, new_vy)
-    
- 
-# -------------------------------------------------------------------
-
         
 # -------------------------------------------------------------------
 
@@ -238,25 +232,28 @@ class Surface2D(Polygon):
         # inicial value
         inside = False
         
-        # vertices
-        n = len(self.points)
-        
         # last vertice
-        j = n - 1
+        j = len(self.points)- 1
         
-        for i in range(n):
+        for i in range(len(self.points)):
+            # vertice i of polygon 
             xi = self.points[i].getX()
             yi = self.points[i].getY()
+            
+            # vertice i polygon
             xj = self.points[j].getX()
             yj = self.points[j].getY()
 
-            # does horizontal ray from (px, py) cross edge ij?
-            if (yi > py) != (yj > py):
+            # if horizontal line from p is between vetice i and j (crosses edge ij)
+            if (yi > py > yj) or (yi < py < yj): 
+                
+                # x where horizontal line crosses  edge ij
                 x_intersect = (xj - xi) * (py - yi) / (yj - yi) + xi
                 if px < x_intersect:
+                    # flips inside. if number of crossings of ray from point with polygon is odd then point is inside
                     inside = not inside
                     
-            # next vertice        
+            # next pair of vertices    
             j = i
         return inside
  
@@ -329,7 +326,8 @@ class Surface3D:
         
         x0 = self.pos0.getX()
         y0 = self.pos0.getY()
-        
+    
+        # mesh aka matrix representing surface
         x = np.linspace(x0 - width / 2, x0 + width / 2, self.resolution + 1)
         y = np.linspace(y0 - height / 2, y0 + height / 2, self.resolution + 1)
         X, Y = np.meshgrid(x, y)
@@ -341,26 +339,28 @@ class Surface3D:
         steps = 50
         palette = []
         
+        # generating palette with Linear interpolation (LERP)
         for i in range(steps):
-            t = i / (steps - 1)
-            # Linear interpolation (LERP)
-            r = int(self.gradient_start[0] + (self.gradient_end[0] - self.gradient_start[0]) * t)
-            g = int(self.gradient_start[1] + (self.gradient_end[1] - self.gradient_start[1]) * t)
-            b = int(self.gradient_start[2] + (self.gradient_end[2] - self.gradient_start[2]) * t)
+            # step 
+            x = i / (steps - 1)
+            
+            # color channels
+            r = int(self.gradient_start[0] + (self.gradient_end[0] - self.gradient_start[0]) * x)
+            g = int(self.gradient_start[1] + (self.gradient_end[1] - self.gradient_start[1]) * x)
+            b = int(self.gradient_start[2] + (self.gradient_end[2] - self.gradient_start[2]) * x)
             palette.append(color_rgb(r, g, b))
         
+        # drawing rectangles acording to mesh
         for i in range(self.resolution):
             for j in range(self.resolution):
                 p1 = Point(X[i, j], Y[i, j])
                 p2 = Point(X[i+1, j+1], Y[i+1, j+1])
-                
                 rect = Rectangle(p1, p2)
                                 
-                norm_z = (Z[i, j] - Z.min()) / z_range
-                color_idx = int(norm_z * (steps - 1))
-                color_idx = max(0, min(color_idx, steps - 1))
-                
-                color = palette[color_idx]
+                z = (Z[i, j] - Z.min()) / z_range
+                color_index = int(z * (steps - 1))
+                color_index = max(0, min(color_index, steps - 1))
+                color = palette[color_index]
                 
                 rect.setFill(color)
                 rect.setOutline(color)  
@@ -377,10 +377,7 @@ class Surface3D:
             
 
 class Simulation(GraphWin):
-    
-    '''class that draws and contains all object simulation'''
-    '''and process collisions''' 
-    
+
     def __init__(self, title: str, width=1280, height=720, dt = 1/ 60, elacticity=0, friction = 0):
         GraphWin.__init__(self, title, width, height, autoflush=False)
         self.setCoords(0, 0, 16, 9)
@@ -431,6 +428,10 @@ class Simulation(GraphWin):
         
         if remaining > 0:
             time.sleep(remaining)
+            
+        if self.isOpen():
+            self.btn_quit.undraw(self)
+            self.btn_quit.draw(self)
                 
     def freeze(self):
         self.indicator.setFill('red')
@@ -517,7 +518,7 @@ class Simulation(GraphWin):
         rel_vy = ball1.getVel().getY() - ball2.getVel().getY()
 
         impulse = rel_vx * nx + rel_vy * ny
-        impulse *= 0.999
+        impulse *= 0.85
         if impulse < 0:
             return
 
@@ -588,10 +589,10 @@ class TrajectoryRecorder:
             t0_str = f"{time.strftime('%H:%M:%S', local_time)}.{ms:03d}\n"
             
             file.write(f"Start Time: {t0_str}\n")
-            file.write("Elapsed Time: " + " ".join(f"{t:.3f}" for t in self.time_log) + "\n")
+            file.write("Elapsed Time: " + " ".join(f"{t:.3f}," for t in self.time_log) + "\n")
             
             for i in range(self.n):
                 file.write(f"Ball {i+1}: \n")
-                file.write(" X Positions:  " + " ".join(f"{x:.3f}" for x in self.x_log[i]) + "\n")
-                file.write(" Y Positions:  " + " ".join(f"{y:.3f}" for y in self.y_log[i]) + "\n")
+                file.write(" X Positions:  " + " ".join(f"{x:.3f}," for x in self.x_log[i]) + "\n")
+                file.write(" Y Positions:  " + " ".join(f"{y:.3f}," for y in self.y_log[i]) + "\n")
  

@@ -1,18 +1,26 @@
 '''
 istxxxxxxx, istxxxxxxx
-File responsible of GUI classes of program
-Contains: Button, InputDialog, Counter, SelectionWindow
+File responsible of GUI related classes
 '''
 
 from graphics import *
 import numpy as np
 
+# colors
+COLOR_BUTTON_FILL = 'gray80'
+COLOR_BUTTON_OUTLINE = 'black'
+COLOR_BUTTON_ACCENT = 'crimson'
+COLOR_STICKMAN = 'orange'
+
+# width
+WIDTH_STICKMAN = 5 
+WIDTH_BUTTON = 2
+
 class Button:
-    
     def __init__(self, p1: Point, p2: Point, text_string: str, action=None, shape='rectangle',
-                 background_color = 'gray80',
-                 outline_color = 'gray20',
-                 outline_width = 2,
+                 background_color = COLOR_BUTTON_FILL,
+                 outline_color = COLOR_BUTTON_OUTLINE,
+                 outline_width = WIDTH_BUTTON,
                  text_color = 'black',
                  text_size = 15):
         self.p1 = p1
@@ -45,10 +53,18 @@ class Button:
         self.text.setFace('arial')
         self.text.setSize(self.text_size)
         
+    def undraw(self, window: GraphWin):
+        self.body.undraw()
+        self.text.undraw()
+        
     def setTextColor(self, color):
         self.text.setTextColor(color)
         self.text_color = color
         
+    def setTextSize(self, size):
+        self.text.setSize(size)
+        self.text_size = size
+    
     def setBackgroundColor(self, color):
         self.body.setFill(color)
         self.background_color = color
@@ -99,42 +115,40 @@ class Stickman:
         y = self.pos.getY()
         
         h = self.height
-        line_width = 5
-        color = 'orange'
         
         head = Circle(Point(x, y + h * 0.85), h * 0.15)
-        head.setWidth(line_width)
-        head.setOutline(color)
+        head.setWidth(WIDTH_STICKMAN)
+        head.setOutline(COLOR_STICKMAN)
         head.draw(window)
         
         body = Line(Point(x, y + h * 0.4), Point(x, y + h * 0.7))
-        body.setWidth(line_width)
-        body.setFill(color)
-        body.setOutline(color)
+        body.setWidth(WIDTH_STICKMAN)
+        body.setFill(COLOR_STICKMAN)
+        body.setOutline(COLOR_STICKMAN)
         body.draw(window)
         
         left_leg = Line(Point(x, y + h * 0.4), Point(x - 0.2, y))
-        left_leg.setWidth(line_width)
-        left_leg.setFill(color)
-        left_leg.setOutline(color)
+        left_leg.setWidth(WIDTH_STICKMAN)
+        left_leg.setFill(COLOR_STICKMAN)
+        left_leg.setOutline(COLOR_STICKMAN)
         left_leg.draw(window)
         
         right_leg = Line(Point(x, y + h * 0.4), Point(x + 0.2, y))
-        right_leg.setWidth(line_width)
-        right_leg.setFill(color)
-        right_leg.setOutline(color)
+        right_leg.setWidth(WIDTH_STICKMAN)
+        right_leg.setFill(COLOR_STICKMAN)
+        right_leg.setOutline(COLOR_STICKMAN)
         right_leg.draw(window)
         
         left_arm = Line(Point(x, y + h * 0.7), Point(x - 0.4, y + h * 0.4))
-        left_arm.setWidth(line_width)
-        left_arm.setFill(color)
-        left_arm.setOutline(color)
+        left_arm.setWidth(WIDTH_STICKMAN)
+        left_arm.setFill(COLOR_STICKMAN)
+        left_arm.setOutline(COLOR_STICKMAN)
         left_arm.draw(window)
         
         right_arm = Line(Point(x, y + h * 0.7), Point(x + 0.4, y + h * 0.4))
-        right_arm.setWidth(line_width)
-        right_arm.setFill(color)
-        right_arm.setOutline(color)
+        right_arm.setWidth(WIDTH_STICKMAN)
+        right_arm.setFill(COLOR_STICKMAN)
+        right_arm.setOutline(COLOR_STICKMAN)
         right_arm.draw(window)
         
         
@@ -180,7 +194,7 @@ class InputDialog(GraphWin):
         
         self.btn_run = Button(Point(2 * self.width / 3 - w, btn_y - 0.5 * w),
                              Point(2 * self.width / 3 + w, btn_y + 0.5 * w), 'RUN',
-                             background_color='crimson', text_color='white')
+                             background_color=COLOR_BUTTON_ACCENT, text_color='white')
         self.btn_run.draw(self)
     
     
@@ -266,7 +280,7 @@ class SelectionWindow(GraphWin):
         # start button
         self.btn_start = Button(Point(0.3 * size , 0.3 * size), Point(0.7 * size, 0.7 * size), 'START',
                            shape='oval',
-                           background_color='crimson',
+                           background_color=COLOR_BUTTON_ACCENT,
                            text_color='white',
                            text_size=20,)
         
@@ -305,10 +319,11 @@ class SelectionWindow(GraphWin):
     def btn_select_action(self, n):
         for btn in self.selection_buttons:
             btn.setTextColor('black')
+            btn.setTextSize(15)
             
         self.selected = self.selection_buttons[n-1]    
-        self.selected.setTextColor('red')
-        self.update()
+        self.selected.setTextColor(COLOR_BUTTON_ACCENT)
+        self.selected.setTextSize(20)
 
     def btn_quit_action(self):
         self.selected = None
@@ -321,6 +336,6 @@ class SelectionWindow(GraphWin):
                 for btn in self.buttons:
                     if btn.is_clicked(mouse):
                         if btn == self.btn_start and self.selected != None:
-                            self.close()
+                            #self.close()
                             return self.selected.getTextString()
                         break
