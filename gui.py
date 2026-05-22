@@ -269,7 +269,7 @@ class Counter:
 
 class SelectionWindow(GraphWin):
     def __init__(self, size):
-        GraphWin.__init__(self, 'Select', size, 1.15 * size, autoflush=False)
+        GraphWin.__init__(self, 'Menu', size, 1.15 * size, autoflush=False)
         self.size = size
         self.selection_buttons = []
         self.buttons = []

@@ -24,7 +24,7 @@ def main():
                 angle = randomize(angle, 0.05)
 
                 # scenario
-                scenario1 = Simulation('Cenário 1', elacticity=0.85, friction=0.5)
+                scenario1 = Simulation('Scenario 1: Basketball', elacticity=0.85, friction=0.5)
                 recorder = TrajectoryRecorder(1, dt=1/60)
 
                 # counters
@@ -109,7 +109,7 @@ def main():
                 height = values[0]
                 
                 # scenario
-                scenario2 = Simulation('Cenário 2', dt=1/60, friction=0.5, elacticity=0)
+                scenario2 = Simulation('Scenario 2: Parabola', dt=1/60, friction=0.5, elacticity=0)
                 recorder = TrajectoryRecorder(1, dt=1/60)
         
                 surface = Surface2D(formula = lambda x: 0.25 * (x-8) ** 2 + 1,
@@ -173,7 +173,7 @@ def main():
                 angle = randomize(angle, 0.05)
                 
                 # scenario
-                scenario3 = Simulation('Cenário 3', dt=1/60)
+                scenario3 = Simulation('Scenario 3: Interception', dt=1/60)
                 recorder = TrajectoryRecorder(2, dt=1/60)
                 
                 # counters
@@ -217,7 +217,7 @@ def main():
                                    vel * np.sin(np.radians(angle))))
                 scenario3.addDynamicObject(ball2)
                 
-                scenario3.freeze()
+                ball1.freeze()
 
                 # main scenario loop
                 while scenario3.isOpen():
@@ -225,7 +225,7 @@ def main():
                     key = scenario3.checkKey().lower()
                     
                     if key == 's':
-                        scenario3.defreeze()
+                        ball1.defreeze()
                     
                     if mouse != None:  
                         scenario3.checkQuitButton(mouse)
@@ -255,21 +255,28 @@ def main():
             
 # ///
         case '4':
+            score_value = 0
+            
             while True:
-                dialog = InputDialog(250, 300, (('Velocity',0, 10), ('Angle',-90, 90),))
-                values = dialog.getValues() 
-                if values is None: break
                 
-                vel, angle = values
+                scored = False
                 
-                scenario4 = Simulation('Cenário 3', dt=1/60, elacticity=0.5)
+                
+                scenario4 = Simulation('Scenario 4: Mini Golf', dt=1/60, elacticity=0.5, friction=0.25)
                 
                 surface = Surface3D(pos0 = Point(8, 4.5), 
-                                formula = lambda x, y: 1 * np.sin(0.4 * x) +  1* np.cos(0.5 * y),
+                                formula = lambda x, y: np.sin(0.6*x) * np.cos(0.6*y) + 0.2*np.sin(1.1*x - 0.5*y) - 0.8*np.exp(-((x-13)**2 + (y-4.5)**2)/2),
                                 resolution=70)
-            
+                recorder = TrajectoryRecorder(1, dt=1/60)
+                
                 scenario4.addStaticObject(surface)
-                    
+                
+                score = Counter(Point(2, 8.5), 'Score', score_value)
+                scenario4.addStaticObject(score)
+                
+                hits = Counter(Point(3.75, 8.5), 'Hits')
+                scenario4.addStaticObject(hits)
+
                 wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))
                 scenario4.addStaticObject(wall1)
                 wall2 = Wall(Point(0.1, 8.9), Point(0.1, 0.1))
@@ -279,15 +286,12 @@ def main():
                 wall4 = Wall(Point(15.9, 8.9), Point(0.1, 8.9))
                 scenario4.addStaticObject(wall4)
                 
-                hole = Circle(Point(15, 4.5), 0.2)
+                hole = Circle(surface.getMinimum(), 0.2)
                 hole.setFill('black')
                 scenario4.addStaticObject(hole)
                 
-                ball = Ball(Point(1, 1), color='white', size=0.1)
-                vx = vel * np.cos(np.radians(angle))
-                vy = vel * np.sin(np.radians(angle))
-                
-                ball.setVel(Point(vx, vy))
+                ball = Ball(Point(15, 1), color='white', size=0.15)
+                ball.setVel(Point(0, 0))
                 ball.setAcl(Point(0,0))
                 scenario4.addDynamicObject(ball)
                 
@@ -298,14 +302,54 @@ def main():
                     if mouse != None:
                         scenario4.checkQuitButton(mouse)
                         
+                        if ball.isFrozen():
+                            ball.defreeze()
+                            scenario4.indicatorOn()
+                        
+                            dx = ball.getPos().getX() - mouse.getX()
+                            dy = ball.getPos().getY() - mouse.getY()
+                            
+                            vel = np.sqrt(dx ** 2 + dy ** 2)
+                            vel = min(vel, 7)
+                            angle = np.arctan2(dy, dx)
+                            
+                            ball.setVel(Point(vel * np.cos(angle), vel * np.sin(angle)))
+
+                            hits.change(1)
+                            
+                    if ball.getSpeed() < 0.1:
+                        ball.freeze()
+                        scenario4.indicatorOff()
+
                     
+                
+                    if np.sqrt((hole.getCenter().getX() - ball.getPos().getX()) ** 2 + (hole.getCenter().getY() - ball.getPos().getY())** 2) <= hole.getRadius() and not scored:
+                        score_value += 1
+                        score.change(1)
+                        scored = True
+                        
+                        scenario4.freeze()
+                    
+                    else:
+                        recorder.record((ball,))
+                        
+                    if key == 'g' and scored:
+                        recorder.save()
+                        scenario4.close()
+                                   
                     scenario4.checkCollisions()
                     scenario4.tick()
-  
+                    
+                break
+            
             main()    
+
 
   
 def randomize(value, percentage):
     return value + random.uniform(- value * percentage, value * percentage)
-          
+         
+ 
+
+         
 main()

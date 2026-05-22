@@ -5,9 +5,10 @@ File responsible of anything related to simulation process, calcualtions and tra
 
 from graphics import *
 from gui import *
+
+from tkinter import filedialog
 import numpy as np
 import time
-from tkinter import filedialog
 
 COLOR_SURFACE = 'gray80'
 COLOR_HOOP = 'powderblue'
@@ -25,6 +26,7 @@ class Ball:
         self.acl = Point(0, 0)
         self.color = color
         self.body = None  
+        self.frozen = False
             
     def getPos(self):
         return self.pos
@@ -50,6 +52,15 @@ class Ball:
     
     def setAcl(self, acl: Point):
         self.acl = acl
+        
+    def freeze(self):
+        self.frozen = True
+    
+    def defreeze(self):
+        self.frozen = False
+        
+    def isFrozen(self):
+        return self.frozen
 
     def draw(self, window: GraphWin):
         self.body = Circle(self.pos, self.size)
@@ -57,7 +68,9 @@ class Ball:
         self.body.setOutline(self.color)
         self.body.draw(window)
 
-    def step(self, dt):        
+    def step(self, dt):  
+        if self.frozen: return
+              
         # current postion
         x = self.pos.getX() 
         y = self.pos.getY()
@@ -333,6 +346,10 @@ class Surface3D:
         X, Y = np.meshgrid(x, y)
         Z = np.asarray(self.formula(X - x0, Y - y0), dtype=float)
         
+        self.X = X
+        self.Y = Y
+        self.Z = Z
+        
         z_range = Z.max() - Z.min()
         if z_range == 0: z_range = 1  
             
@@ -367,14 +384,25 @@ class Surface3D:
                 rect.draw(window)
                 
     def getGradient(self, point: Point):
-        px, py = point.getX(), point.getY()
+        px = point.getX() - self.pos0.getX()
+        py = point.getY() - self.pos0.getY()
         h = 1e-5
         
         df_dx = (self.formula(px + h, py) - self.formula(px - h, py)) / (2 * h)
         df_dy = (self.formula(px, py + h) - self.formula(px, py - h)) / (2 * h)
     
         return Point(df_dx, df_dy) 
-            
+    
+    def getMinimum(self):
+        index = np.argmin(np.abs(self.Z - self.Z.min()))
+        index = np.unravel_index(index, self.Z.shape)
+        return Point(float(self.X[index]), float(self.Y[index]))
+    '''
+    def getMaximum(self):
+        index = np.argmin(np.abs(self.Z - self.Z.max()))
+        index = np.unravel_index(index, self.Z.shape)
+        return Point(float(self.X[index]), float(self.Y[index]))
+    '''        
 
 class Simulation(GraphWin):
 
@@ -398,7 +426,12 @@ class Simulation(GraphWin):
         self.indicator.setWidth(0)
         self.indicator.draw(self)
     
+    def indicatorOn(self):
+        self.indicator.setFill('green')
         
+    def indicatorOff(self):
+        self.indicator.setFill('red')
+    
     def addDynamicObject(self, obj):
         self.dynamic_objects.append(obj)
         obj.draw(self)
@@ -432,14 +465,16 @@ class Simulation(GraphWin):
         if self.isOpen():
             self.btn_quit.undraw(self)
             self.btn_quit.draw(self)
+            self.indicator.undraw()
+            self.indicator.draw(self)
                 
     def freeze(self):
-        self.indicator.setFill('red')
+        self.indicatorOff()
         self.frozen = True
 
     def defreeze(self): 
         self.frozen = False
-        self.indicator.setFill('green')
+        self.indicatorOn()
         
     def isFrozen(self):
         return self.frozen
@@ -525,10 +560,24 @@ class Simulation(GraphWin):
         ball1.setVel(Point(ball1.vel.getX() - impulse * nx, ball1.vel.getY() - impulse * ny))
         ball2.setVel(Point(ball2.vel.getX() + impulse * nx, ball2.vel.getY() + impulse * ny))
 
-    '''!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'''
-    def surfaceCollision(self,ball: Ball, surface: Surface3D, ):
+    def surfaceCollision(self, ball: Ball, surface: Surface3D, ):
         if self.frozen: return
-        pass
+        
+        vector = surface.getGradient(ball.getPos())
+        
+        a = 3
+        
+        vectorx = - vector.getX() * a
+        vectory = - vector.getY() * a
+        
+        ball.setAcl(Point(vectorx, vectory))
+        
+        vx = ball.getVel().getX() * (1 - self.friction * self.dt)
+        vy = ball.getVel().getY() * (1 - self.friction * self.dt)
+        
+        ball.setVel(Point(vx, vy))
+        
+        
         
     def checkCollisions(self):
         if self.frozen: return
@@ -553,8 +602,7 @@ class Simulation(GraphWin):
     
         
          
-import time
-from tkinter import filedialog
+
 
 class TrajectoryRecorder:
     def __init__(self, n: int, dt):
@@ -565,17 +613,18 @@ class TrajectoryRecorder:
         self.time_log = []
         
         # [[ball 1], [ball2], ...]
-        self.x_log = [[] for i in range(n)]
-        self.y_log = [[] for i in range(n)]
+        self.x_log = [[] for _ in range(n)]
+        self.y_log = [[] for _ in range(n)]
         
     def record(self, balls):
         self.time_log.append(self.elapsed_time)
         self.elapsed_time += self.dt
-        
+                
         for i in range(len(balls)):
             if len(balls) == self.n:
               self.x_log[i].append(balls[i].getPos().getX())
               self.y_log[i].append(balls[i].getPos().getY())  
+              
             
     def save(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".txt")
