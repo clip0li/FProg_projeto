@@ -6,17 +6,31 @@ File responsible of GUI related classes
 from graphics import *
 import numpy as np
 
-# colors
 COLOR_BUTTON_FILL = 'gray80'
 COLOR_BUTTON_OUTLINE = 'black'
 COLOR_BUTTON_ACCENT = 'crimson'
 COLOR_STICKMAN = 'orange'
 
-# width
 WIDTH_STICKMAN = 5 
 WIDTH_BUTTON = 2
 
+
 class Button:
+    '''Creates and draws buttons of two shapes: rectangle and oval. Has various visual parameters that can be changed
+    
+    Attributes:
+        p1(Point): first point thar defines rectangle or rectangle with an oval inscribed in it
+        p2(Point): second point thar defines rectangle or rectangle with an oval inscribed in it
+        text_string(str): text that will be displayed inside of button
+        action(fucntion): function that is executed when button is pressed
+        shape(str): shape of button: rectangle or oval
+        background_color(str): color of background 
+        outline_color(str): color of outline 
+        outline_width(float): line width of outline 
+        text_color(str): color of text
+        text_size(float): text size. Possible values are [5 36] according to graphics.py
+    '''
+    
     def __init__(self, p1: Point, p2: Point, text_string: str, action=None, shape='rectangle',
                  background_color = COLOR_BUTTON_FILL,
                  outline_color = COLOR_BUTTON_OUTLINE,
@@ -79,7 +93,6 @@ class Button:
         if pos == None: return False
         
         if self.shape == 'rectangle':
-            
             if min(self.p1.getX(), self.p2.getX()) <= pos.getX() <= max(self.p1.getX(), self.p2.getX()) and \
                min(self.p1.getY(), self.p2.getY()) <= pos.getY() <= max(self.p1.getY(), self.p2.getY()):
 
@@ -101,11 +114,19 @@ class Button:
                 return True 
             
         else: return False
+    
         
-# -------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------
 
 
 class Stickman:
+    '''Draws a stickman
+    
+    Attributes:
+        pos(Point): position of stickman placed at the bottom between the legs
+        height(float): height of stickman. Adjusts other parts of body
+    '''
+    
     def __init__(self, pos: Point, height):
         self.pos = pos
         self.height = height
@@ -151,15 +172,19 @@ class Stickman:
         right_arm.setOutline(COLOR_STICKMAN)
         right_arm.draw(window)
         
-        
 
-                
-# -------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------
 
 
 class InputDialog(GraphWin):
-    '''
-    inputs = (Name: str, min: int, max: int)
+    ''' Opens a window to get values from user. Has adjustable number of entries and error protection
+    
+    Attributes:
+        width(int): width of window
+        height(int): height of window
+        inputs(list(Name: str, min: int, max: int)): list of inputs. Each input is list that contains name and minimum and maximum value
+        entries(list(Entry)): list of entries objects from graphics.py
+        self.entries_width(int): width of entry box
     '''
     
     def __init__(self, width: int, height: int, inputs=()):
@@ -169,8 +194,8 @@ class InputDialog(GraphWin):
         self.entries = []
         self.entries_width = 5
         
-        GraphWin.__init__(self, 'Insert values', width, height)
-        
+        super().__init__('Insert values', width, height)
+
         step = self.height / (len(self.inputs) + 2)
         
         for i, input in enumerate(self.inputs):
@@ -197,9 +222,14 @@ class InputDialog(GraphWin):
                              background_color=COLOR_BUTTON_ACCENT, text_color='white')
         self.btn_run.draw(self)
     
-    
-        
     def getValues(self):
+        '''
+        Gets values from each entry box
+        
+        Returns:
+            List of values of variables in order which were initialized. If values are invalid return None
+        '''
+        
         while self.isOpen():
             mouse = self.checkMouse()
             if mouse != None:
@@ -236,14 +266,20 @@ class InputDialog(GraphWin):
             if key != '':
                 for entry in self.entries:
                     entry.setTextColor('black')
+                    
 
-# -------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------
 
 
 class Counter:
+    '''Displays text with number to count varibales in form 'Name: {value}'
     
-    '''Displays text with number to count varibales such as score and lives'''
-    '''Arguments: position, text as string and initial value of variable'''
+    Attributes: 
+        pos(Point): position of the center of counter
+        text_str(str): name of counter 
+        value(float): value of counter
+        text(Text): text object of counter from graphics.py
+    '''
     
     def __init__(self, pos: Point, text_str: str, value=0):
         self.pos = pos
@@ -260,16 +296,26 @@ class Counter:
         
     def change(self, i=1):
         '''increments and decrements value by i'''
+        
         self.value += i
         self.text.setText(f'{self.text_str}: {self.value}')
 
 
-# -------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------
     
 
 class SelectionWindow(GraphWin):
+    '''Creates and displays menu window with 4 buttons for each scenario, start and quit button
+    
+    Attributes:
+        size(int): width and height of window (1:1.15)
+        selection_buttons(list(Button)): list of selection buttons (1,2,3,4)
+        buttons(list(Button)): list of all buttons
+        selected(Button): currently selected button of there is one, otherwise None
+    '''
+    
     def __init__(self, size):
-        GraphWin.__init__(self, 'Menu', size, 1.15 * size, autoflush=False)
+        super().__init__('Menu', size, 1.15 * size, autoflush=False)
         self.size = size
         self.selection_buttons = []
         self.buttons = []
@@ -336,6 +382,6 @@ class SelectionWindow(GraphWin):
                 for btn in self.buttons:
                     if btn.is_clicked(mouse):
                         if btn == self.btn_start and self.selected != None:
-                            #self.close()
                             return self.selected.getTextString()
                         break
+# ------------------------------------------------------------------------------------------------------------------------
