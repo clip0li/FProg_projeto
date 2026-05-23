@@ -444,22 +444,23 @@ class Surface3D:
         y0 = self.pos0.getY()
     
         # mesh aka matrix representing surface
-        x = np.linspace(x0 - width / 2, x0 + width / 2, self.resolution + 1)
-        y = np.linspace(y0 - height / 2, y0 + height / 2, self.resolution + 1)
+        x = np.linspace(x0 - width / 2, x0 + width / 2, (self.resolution * 16 + 1))
+        y = np.linspace(y0 - height / 2, y0 + height / 2, (self.resolution * 9 + 1))
         X, Y = np.meshgrid(x, y)
-        Z = np.asarray(self.formula(X - x0, Y - y0), dtype=float)
+        Z = np.asarray(self.formula(X - x0, Y - y0))
         
         self.X = X
         self.Y = Y
         self.Z = Z
         
-        z_range = Z.max() - Z.min()
-        if z_range == 0: z_range = 1  
-            
+        Z_range = Z.max() - Z.min()
+        if Z_range == 0: Z_range = 1  
+        
+        # number of colors    
         steps = 50
         palette = []
         
-        # generating palette with Linear interpolation (LERP)
+        # generating palette with linear interpolation
         for i in range(steps):
             # step 
             x = i / (steps - 1)
@@ -471,13 +472,13 @@ class Surface3D:
             palette.append(color_rgb(r, g, b))
         
         # drawing rectangles acording to mesh
-        for i in range(self.resolution):
-            for j in range(self.resolution):
+        for i in range(self.resolution * 9):
+            for j in range(self.resolution * 16):
                 p1 = Point(X[i, j], Y[i, j])
                 p2 = Point(X[i+1, j+1], Y[i+1, j+1])
                 rect = Rectangle(p1, p2)
                                 
-                z = (Z[i, j] - Z.min()) / z_range
+                z = (Z[i, j] - Z.min()) / Z_range
                 color_index = int(z * (steps - 1))
                 color_index = max(0, min(color_index, steps - 1))
                 color = palette[color_index]

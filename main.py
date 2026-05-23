@@ -8,7 +8,6 @@ slct_win = SelectionWindow(400)
 def main():
     match slct_win.select():
         
-# ///        
         case '1':
             score_value = 0
 
@@ -58,7 +57,6 @@ def main():
                 ball.setVel(Point(vx, vy))
                 ball.setAcl(Point(0, -9.8))
                 
-
                 # main scenario loop
                 scored = False
                 
@@ -75,13 +73,15 @@ def main():
                         score_value += 2
                         scored = True
 
+                    # if ball touches floor
                     if ball.getPos().getY() < ball.getSize() + 0.11: 
-                            
+                        scenario1.checkCollisions()
                         scenario1.freeze()
                         
                         if key == 'g':
                             recorder.save()
                             scenario1.close()
+                            
                         if mouse != None:
                             scenario1.close()
                             break
@@ -91,13 +91,11 @@ def main():
                         
                     scenario1.checkCollisions()
                     scenario1.tick()    
-                    
-
+                
                 scored = False
                 
             main()    
                 
-  # ///                   
         case '2':
             while True:
                 # dialog window
@@ -111,7 +109,8 @@ def main():
                 # scenario
                 scenario2 = Simulation('Scenario 2: Parabola', dt=1/60, friction=0.5, elacticity=0)
                 recorder = TrajectoryRecorder(1, dt=1/60)
-        
+
+                # parabola
                 surface = Surface2D(formula = lambda x: 0.25 * (x-8) ** 2 + 1,
                                     start = 3,end = 13)
                 
@@ -156,7 +155,6 @@ def main():
                     scenario2.tick() 
             main()
             
-# ///   
         case '3':
             score_value = 0
             lives_value = 5
@@ -236,10 +234,9 @@ def main():
                         scenario3.close()
                         lives_value -= 1
     
-
-                    if ball1.getSpeed() < 0.5 and ball1.getPos().getY() < 5 and not scenario3.isFrozen:  
-                        scenario3.freeze()
+                    if ball1.getSpeed() < 0.5 and ball1.getPos().getY() < 5 and not scenario3.isFrozen: 
                         scenario3.checkCollisions()
+                        scenario3.freeze()
                         
                         if key == 'g':
                             recorder.save()
@@ -253,7 +250,6 @@ def main():
                     
             main()   
             
-# ///
         case '4':
             score_value = 0
             
@@ -261,22 +257,25 @@ def main():
                 
                 scored = False
                 
-                
+                # scenario
                 scenario4 = Simulation('Scenario 4: Mini Golf', dt=1/60, elacticity=0.5, friction=0.25)
-                
-                surface = Surface3D(pos0 = Point(8, 4.5), 
-                                formula = lambda x, y: np.sin(0.6*x) * np.cos(0.6*y) + 0.2*np.sin(1.1*x - 0.5*y) - 0.8*np.exp(-((x-13)**2 + (y-4.5)**2)/2),
-                                resolution=70)
                 recorder = TrajectoryRecorder(1, dt=1/60)
                 
+                # surface
+                surface = Surface3D(pos0 = Point(8, 4.5), 
+                                formula = lambda x, y: np.sin(0.6*x) * np.cos(0.6*y) + 0.2*np.sin(1.1*x - 0.5*y) - 0.8*np.exp(-((x-13)**2 + (y-4.5)**2)/2),
+                                resolution=5)
                 scenario4.addStaticObject(surface)
                 
-                score = Counter(Point(2, 8.5), 'Score', score_value)
+                # score
+                score = Counter(Point(2, 8.5), 'Score', score_value, 'white')
                 scenario4.addStaticObject(score)
                 
-                hits = Counter(Point(3.75, 8.5), 'Hits')
+                # hits
+                hits = Counter(Point(3.75, 8.5), 'Hits', 0, 'white')
                 scenario4.addStaticObject(hits)
 
+                # walls
                 wall1 = Wall(Point(0.1, 0.1), Point(15.9, 0.1))
                 scenario4.addStaticObject(wall1)
                 wall2 = Wall(Point(0.1, 8.9), Point(0.1, 0.1))
@@ -286,18 +285,22 @@ def main():
                 wall4 = Wall(Point(15.9, 8.9), Point(0.1, 8.9))
                 scenario4.addStaticObject(wall4)
                 
+                # hole
                 hole = Circle(surface.getMinimum(), 0.2)
                 hole.setFill('black')
                 scenario4.addStaticObject(hole)
                 
+                # ball
                 ball = Ball(Point(15, 1), color='white', size=0.15)
                 ball.setVel(Point(0, 0))
                 ball.setAcl(Point(0,0))
                 scenario4.addDynamicObject(ball)
                 
+                # main loop
                 while scenario4.isOpen():
                     mouse = scenario4.checkMouse()
                     key = scenario4.checkKey().lower()
+                    
                     
                     if mouse != None:
                         scenario4.checkQuitButton(mouse)
@@ -316,13 +319,15 @@ def main():
                             ball.setVel(Point(vel * np.cos(angle), vel * np.sin(angle)))
 
                             hits.change(1)
-                            
+                    
+                    if key == 'g' and scored:
+                        recorder.save()
+                        scenario4.close()
+                                 
                     if ball.getSpeed() < 0.1:
                         ball.freeze()
                         scenario4.indicatorOff()
 
-                    
-                
                     if np.sqrt((hole.getCenter().getX() - ball.getPos().getX()) ** 2 + (hole.getCenter().getY() - ball.getPos().getY())** 2) <= hole.getRadius() and not scored:
                         score_value += 1
                         score.change(1)
@@ -332,10 +337,6 @@ def main():
                     
                     else:
                         recorder.record((ball,))
-                        
-                    if key == 'g' and scored:
-                        recorder.save()
-                        scenario4.close()
                                    
                     scenario4.checkCollisions()
                     scenario4.tick()
@@ -344,12 +345,9 @@ def main():
             
             main()    
 
-
-  
+ 
 def randomize(value, percentage):
     return value + random.uniform(- value * percentage, value * percentage)
-         
- 
-
-         
+             
+    
 main()

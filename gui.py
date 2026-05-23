@@ -279,16 +279,19 @@ class Counter:
         text_str(str): name of counter 
         value(float): value of counter
         text(Text): text object of counter from graphics.py
+        color(str): color of counter
     '''
     
-    def __init__(self, pos: Point, text_str: str, value=0):
+    def __init__(self, pos: Point, text_str: str, value=0, color='black'):
         self.pos = pos
         self.text_str = text_str
         self.value = value
         self.text = None
+        self.color = color
         
     def draw(self, window: GraphWin):
         self.text = Text(self.pos, f'{self.text_str}: {self.value}')
+        self.text.setTextColor(self.color)
         self.text.setStyle('bold')
         self.text.setFace('arial')
         self.text.setSize(20)
@@ -297,7 +300,7 @@ class Counter:
     def change(self, i=1):
         '''increments and decrements value by i'''
         
-        self.value += i
+        self.value += int(i)
         self.text.setText(f'{self.text_str}: {self.value}')
 
 
