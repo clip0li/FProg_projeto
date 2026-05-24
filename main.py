@@ -254,7 +254,7 @@ def main():
             score_value = 0
             
             while True:
-                
+                hits_value = 0
                 scored = False
                 
                 # scenario
@@ -290,6 +290,22 @@ def main():
                 hole.setFill('black')
                 scenario4.addStaticObject(hole)
                 
+                # flag
+                h = 1 # height
+                w = 0.5 # width
+                
+                f1 = Point(hole.getCenter().getX() - hole.getRadius() - 0.1, hole.getCenter().getY())
+                f2 = Point(f1.getX(), f1.getY() + h)
+                flagpol = Line(f1, f2)
+                flagpol.setFill('white')
+                flagpol.setWidth(3)
+                scenario4.addStaticObject(flagpol)
+                
+                flag = Rectangle(f2, Point(f2.getX() + w, f2.getY() - h / 3))
+                flag.setFill('red')
+                flag.setOutline('red')
+                scenario4.addStaticObject(flag)
+                
                 # ball
                 ball = Ball(Point(15, 1), color='white', size=0.15)
                 ball.setVel(Point(0, 0))
@@ -300,7 +316,6 @@ def main():
                 while scenario4.isOpen():
                     mouse = scenario4.checkMouse()
                     key = scenario4.checkKey().lower()
-                    
                     
                     if mouse != None:
                         scenario4.checkQuitButton(mouse)
@@ -319,6 +334,21 @@ def main():
                             ball.setVel(Point(vel * np.cos(angle), vel * np.sin(angle)))
 
                             hits.change(1)
+                            hits_value += 1
+                            
+                        if scored:
+                            ball.setPos(Point(random.randint(1, 15), random.randint(1, 8)))
+                            ball.setVel(Point(0,0))
+                            ball.setAcl(Point(0,0))
+                            ball.draw(scenario4)
+                            ball.freeze()
+                            
+                            scenario4.defreeze()
+                            recorder.clear()
+                            
+                            hits_value = 0
+                            hits.clear()
+                            scored = False
                     
                     if key == 'g' and scored:
                         recorder.save()
@@ -329,10 +359,12 @@ def main():
                         scenario4.indicatorOff()
 
                     if np.sqrt((hole.getCenter().getX() - ball.getPos().getX()) ** 2 + (hole.getCenter().getY() - ball.getPos().getY())** 2) <= hole.getRadius() and not scored:
-                        score_value += 1
-                        score.change(1)
+                        new_score = 10 - hits_value if hits_value <= 11 else 0
+                        score_value = new_score
+                        score.change(new_score)
                         scored = True
                         
+                        ball.undraw()
                         scenario4.freeze()
                     
                     else:

@@ -75,6 +75,9 @@ class Ball:
         self.body.setFill(self.color)
         self.body.setOutline(self.color)
         self.body.draw(window)
+        
+    def undraw(self):
+        self.body.undraw()
 
     def step(self, dt):  
         if self.frozen: return
@@ -798,4 +801,11 @@ class TrajectoryRecorder:
                 file.write(f"Ball {i+1}: \n")
                 file.write(" X Positions:  " + " ".join(f"{x:.3f}," for x in self.x_log[i]) + "\n")
                 file.write(" Y Positions:  " + " ".join(f"{y:.3f}," for y in self.y_log[i]) + "\n")
+                
+    def clear(self):
+        self.t0 = time.time()
+        self.time_log = []
+        self.x_log = [[] for _ in range(self.n)]
+        self.y_log = [[] for _ in range(self.n)]
+        
 # ------------------------------------------------------------------------------------------------------------------------

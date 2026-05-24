@@ -302,8 +302,10 @@ class Counter:
         
         self.value += int(i)
         self.text.setText(f'{self.text_str}: {self.value}')
-
-
+    
+    def clear(self):
+        self.value = 0
+        self.text.setText(f'{self.text_str}: {self.value}')
 # ------------------------------------------------------------------------------------------------------------------------
     
 
