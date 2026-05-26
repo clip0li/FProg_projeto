@@ -785,10 +785,12 @@ class TrajectoryRecorder:
               
             
     def save(self):
+        # file window to get location and name
         file_path = filedialog.asksaveasfilename(defaultextension=".txt")
 
         if not file_path: return
         
+        # write file
         with open(file_path, 'w') as file:
             local_time = time.localtime(self.t0)
             ms = int((self.t0 % 1) * 1000)

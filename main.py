@@ -31,7 +31,7 @@ def main():
                 scenario1.addStaticObject(score)
                 
                 # hoop
-                hoop = Hoop(Point(14, 5), 1, 0.1)
+                hoop = Hoop(Point(14, 5), 1.2, 0.1)
                 scenario1.addStaticObject(hoop)
                 
                 # stickman
@@ -159,9 +159,11 @@ def main():
             score_value = 0
             lives_value = 5
             
+            scored = False
+            
             while lives_value > 0:
                 # dialog window
-                dialog = InputDialog(250, 300, (('Velocity',0, 20), ('Angle',0, 90)))
+                dialog = InputDialog(250, 300, (('Velocity',0, 15), ('Angle',0, 90)))
                 values = dialog.getValues() 
                 if values is None: break
                 
@@ -215,26 +217,39 @@ def main():
                                    vel * np.sin(np.radians(angle))))
                 scenario3.addDynamicObject(ball2)
                 
-                ball1.freeze()
+                scenario3.freeze()
+                ball2.freeze()
 
                 # main scenario loop
                 while scenario3.isOpen():
                     mouse = scenario3.checkMouse()
                     key = scenario3.checkKey().lower()
                     
+                    # start simulation
                     if key == 's':
-                        ball1.defreeze()
+                        scenario3.defreeze()
                     
                     if mouse != None:  
                         scenario3.checkQuitButton(mouse)
-                        if scenario3.isFrozen() and ball1.getPos().getY() != 8:
+                        
+                        # launch ball
+                        if not scenario3.isFrozen():
+                            ball2.defreeze()
+        
+                        # give score if succeded
+                        if scenario3.isFrozen() and not scored and ball1.getPos().getY() != 8:
                             score_value += 1
                     
+                    # fail conition        
                     if hoop.is_scored(ball1.getPos()):
                         scenario3.close()
                         lives_value -= 1
-    
-                    if ball1.getSpeed() < 0.5 and ball1.getPos().getY() < 5 and not scenario3.isFrozen: 
+                        scored = True
+                    
+                    # win condition
+                    if not scored and (ball1.getSpeed() < 0.2 and ball1.getPos().getY() < 8) or \
+                                      (ball2.getSpeed() < 0.2 and ball2.getPos().getY() < 0.5):
+                                          
                         scenario3.checkCollisions()
                         scenario3.freeze()
                         
@@ -330,14 +345,17 @@ def main():
                             vel = np.sqrt(dx ** 2 + dy ** 2)
                             vel = min(vel, 7)
                             angle = np.arctan2(dy, dx)
+
+                            vel = randomize(vel, 0.01)
+                            angle = randomize(angle, 0.01)
                             
                             ball.setVel(Point(vel * np.cos(angle), vel * np.sin(angle)))
-
+                            
                             hits.change(1)
                             hits_value += 1
                             
                         if scored:
-                            ball.setPos(Point(random.randint(1, 15), random.randint(1, 8)))
+                            ball.setPos(Point(15, 1))
                             ball.setVel(Point(0,0))
                             ball.setAcl(Point(0,0))
                             ball.draw(scenario4)
@@ -359,7 +377,7 @@ def main():
                         scenario4.indicatorOff()
 
                     if np.sqrt((hole.getCenter().getX() - ball.getPos().getX()) ** 2 + (hole.getCenter().getY() - ball.getPos().getY())** 2) <= hole.getRadius() and not scored:
-                        new_score = 10 - hits_value if hits_value <= 11 else 0
+                        new_score = 5 - hits_value if hits_value <= 4 else 0
                         score_value = new_score
                         score.change(new_score)
                         scored = True
@@ -381,5 +399,5 @@ def main():
 def randomize(value, percentage):
     return value + random.uniform(- value * percentage, value * percentage)
              
-    
+
 main()
