@@ -165,7 +165,7 @@ def main():
                                     start = 0.1, end = 9)
                 scenario3.addStaticObject(surface)
                 
-                hoop = Hoop(Point(13.5, 5), 1, 0.1)
+                hoop = Hoop(Point(13.5, 5), 1.7, 0.15) 
                 scenario3.addStaticObject(hoop)
                 
                 stickman = Stickman(Point(13, 0.15), 3)
