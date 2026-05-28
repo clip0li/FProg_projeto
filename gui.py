@@ -261,7 +261,7 @@ class InputDialog(GraphWin):
                         self.close()
                         return data
             
-            # reset entry color when any ky clicked 
+            # reset entry color when any key clicked 
             key = self.checkKey()
             if key != '':
                 for entry in self.entries:
@@ -328,7 +328,6 @@ class SelectionWindow(GraphWin):
         
         self.setBackground('white')
         
-        # start button
         self.btn_start = Button(Point(0.3 * size , 0.3 * size), Point(0.7 * size, 0.7 * size), 'START',
                            shape='oval',
                            background_color=COLOR_BUTTON_ACCENT,
@@ -337,12 +336,10 @@ class SelectionWindow(GraphWin):
         
         self.buttons.append(self.btn_start)
             
-        # quit button
         self.btn_quit = Button(Point(0.4 * size, size), Point(0.6 * size, 1.1 * size), 'QUIT',
                           action=self.btn_quit_action)
         self.buttons.append(self.btn_quit)
         
-        # selection buttons
         for i in range(1, 5):
             if i % 2 == 0:
                 x1 = 0.5 * size

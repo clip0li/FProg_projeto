@@ -82,22 +82,18 @@ class Ball:
     def step(self, dt):  
         if self.frozen: return
               
-        # current postion
         x = self.pos.getX() 
         y = self.pos.getY()
         
-        # current velocity
         vx = self.vel.getX() 
         vy = self.vel.getY() 
         
-        # delta(change) of position 
         dx = vx * dt
         dy = vy * dt
         
         self.body.move(dx, dy)
         self.pos = Point(x + dx, y + dy)
         
-        # new velocity
         new_vx = vx + self.acl.getX() * dt
         new_vy = vy + self.acl.getY() * dt
         self.vel = Point(new_vx, new_vy)
@@ -186,8 +182,8 @@ class Hoop:
     def is_scored(self, pos: Point):
         '''returns True if point is within rectangle between two circles'''
         
-        p1 = Point(self.pos.getX() - self.width / 2, self.pos.getY() + self.size)
-        p2 = Point(self.pos.getX() + self.width / 2, self.pos.getY() - self.size)
+        p1 = Point(self.pos.getX() - self.width / 2 + self.size * 2, self.pos.getY() + self.size)
+        p2 = Point(self.pos.getX() + self.width / 2 - self.size * 2, self.pos.getY() - self.size)
         
         if min(p1.getX(), p2.getX()) <= pos.getX() <= max(p1.getX(), p2.getX()) and \
                min(p1.getY(), p2.getY()) <= pos.getY() <= max(p1.getY(), p2.getY()):
@@ -241,12 +237,10 @@ class Wall(Line):
         magnitude = wx ** 2 + wy ** 2
         proj = max(0, min(1, dot / magnitude))
         
-        # contact point
         contact_x = self.p1.getX() + proj * wx
         contact_y = self.p1.getY() + proj * wy
         contact_point  = Point(contact_x, contact_y)
         
-        # absolute distance
         dx = point.getX() - contact_x 
         dy = point.getY() - contact_y
         abs_distance = np.sqrt(dx**2 + dy**2)
@@ -289,7 +283,7 @@ class Surface2D(Polygon):
         # left up point
         points.append(Point(start, formula(start)))
         
-        # function buttons
+        # function points
         for i in range(1, resolution + 1):
             x = start + i * (abs(end - start) / resolution)
             y = self.formula(x)
@@ -317,11 +311,9 @@ class Surface2D(Polygon):
             inside(bool)
         '''
         
-        # point
         px = point.getX()
         py = point.getY()
         
-        # inicial value
         inside = False
         
         # last vertice
@@ -332,7 +324,7 @@ class Surface2D(Polygon):
             xi = self.points[i].getX()
             yi = self.points[i].getY()
             
-            # vertice i polygon
+            # vertice j of polygon
             xj = self.points[j].getX()
             yj = self.points[j].getY()
 
@@ -342,10 +334,9 @@ class Surface2D(Polygon):
                 # x where horizontal line crosses  edge ij
                 x_intersect = (xj - xi) * (py - yi) / (yj - yi) + xi
                 if px < x_intersect:
-                    # flips inside. if number of crossings of ray from point with polygon is odd then point is inside
+                    # if number of crossings of ray from point with polygon is odd then point is inside
                     inside = not inside
                     
-            # next pair of vertices    
             j = i
             
         return inside
@@ -361,54 +352,43 @@ class Surface2D(Polygon):
             distance(float):
         '''
         
-        # point
         px = point.getX()
         py = point.getY()
         
-        # inicial values
         best_dist = float('inf')
         contact_point = None
         
-        # vertices
         n = len(self.points)
         
         for i in range(n):
-            # vertice 1
-            ax = self.points[i].getX()
-            ay = self.points[i].getY()
+            x1 = self.points[i].getX()
+            y1 = self.points[i].getY()
             
-            # vertice 2
-            bx = self.points[(i+1) % n].getX()
-            by = self.points[(i+1) % n].getY()
+            x2 = self.points[(i+1) % n].getX()
+            y2 = self.points[(i+1) % n].getY()
             
-            # vector between vertices
-            dx = bx - ax
-            dy = by - ay
+            dx = x2 - x1
+            dy = y2 - y1
             
-            # squares length
             length_sq = dx ** 2 + dy ** 2
             
-            # if points are the same
             if length_sq == 0:
                 t = 0
             else:
-                t = ((px - ax) * dx + (py - ay) * dy) / length_sq
+                t = ((px - x1) * dx + (py - y1) * dy) / length_sq
                 
                 # limit vector in edge
                 t = max(0.0, min(1.0, t))
             
-            # contact point
-            cx = ax + t * dx
-            cy = ay + t * dy
+            contactx = x1 + t * dx
+            contacty = y1 + t * dy
             
-            dist = np.sqrt((px-cx) ** 2 + (py - cy) ** 2)
+            dist = np.sqrt((px-contactx) ** 2 + (py - contacty) ** 2)
             
-            # comparing with best distance
             if dist < best_dist:
                 best_dist = dist
-                contact_point = Point(cx, cy)
+                contact_point = Point(contactx, contacty)
 
-        # detecting if point is within polygon
         signed_dist = best_dist if not self.contains(point) else - best_dist
             
         return contact_point, signed_dist
@@ -436,17 +416,14 @@ class Surface3D:
         self.gradient_end = (140, 210, 50)       
 
     def draw(self, window: GraphWin):
-        # get window coordinates
         xlow, yhigh = window.toWorld(0, 0)
         xhigh, ylow = window.toWorld(window.getWidth(), window.getHeight())
         width = xhigh - xlow
         height = yhigh - ylow
         
-        # origin
         x0 = self.pos0.getX()
         y0 = self.pos0.getY()
     
-        # mesh aka matrix representing surface
         x = np.linspace(x0 - width / 2, x0 + width / 2, (self.resolution * 16 + 1))
         y = np.linspace(y0 - height / 2, y0 + height / 2, (self.resolution * 9 + 1))
         X, Y = np.meshgrid(x, y)
@@ -459,22 +436,17 @@ class Surface3D:
         Z_range = Z.max() - Z.min()
         if Z_range == 0: Z_range = 1  
         
-        # number of colors    
         steps = 50
         palette = []
         
-        # generating palette with linear interpolation
         for i in range(steps):
-            # step 
             x = i / (steps - 1)
             
-            # color channels
             r = int(self.gradient_start[0] + (self.gradient_end[0] - self.gradient_start[0]) * x)
             g = int(self.gradient_start[1] + (self.gradient_end[1] - self.gradient_start[1]) * x)
             b = int(self.gradient_start[2] + (self.gradient_end[2] - self.gradient_start[2]) * x)
             palette.append(color_rgb(r, g, b))
         
-        # drawing rectangles acording to mesh
         for i in range(self.resolution * 9):
             for j in range(self.resolution * 16):
                 p1 = Point(X[i, j], Y[i, j])
@@ -511,7 +483,6 @@ class Surface3D:
         return Point(float(self.X[index]), float(self.Y[index]))
        
 
-
 # ------------------------------------------------------------------------------------------------------------------------
 
 
@@ -545,11 +516,9 @@ class Simulation(GraphWin):
         
         self.setBackground('white')
         
-        # quit button
         self.btn_quit = Button(Point(0.25, 8.75), Point(1, 8.25), 'QUIT', action=lambda: self.close())
         self.btn_quit.draw(self)
         
-        # round indicator in right upper corner
         self.indicator = Circle(Point(15.7, 8.7), 0.1)
         self.indicator.setFill('green')
         self.indicator.setWidth(0)
@@ -617,47 +586,38 @@ class Simulation(GraphWin):
         
         if distance > ball.getSize() or distance == 0: return 
                                         
-        # normal vector
         normalx = ball.pos.getX() -  collision_point.getX()
         normaly = ball.pos.getY() -  collision_point.getY()
         
-        # normalize
         normalx /= distance
         normaly /= distance
         
-        # tangent vector
         tangentx = normaly
         tangenty = -normalx
         
-        # correct position
         x = collision_point.getX() + normalx * ball.getSize()
         y = collision_point.getY() + normaly * ball.getSize()   
         ball.setPos(Point(x, y))
             
-        # curent velocity
         vx = ball.getVel().getX()
         vy = ball.getVel().getY()
         
-        v_normal = vx * normalx + vy * normaly    # projection of velocity on normal unit vector
-        v_tangent = vx * tangentx + vy * tangenty # projection of velocity on tangent unit vector
+        v_normal = vx * normalx + vy * normaly    
+        v_tangent = vx * tangentx + vy * tangenty 
         
         # skip if ball moving from the surface
         if v_normal >= 0: return
         
-        # current acceleration
         ax = ball.getAcl().getX()
         ay = ball.getAcl().getY()
         a_tangent = ax * tangentx + ay * tangenty 
         
-        # new velocity with normal and tangent components
         v_tangent_new = (v_tangent + a_tangent * self.dt) * (1 - self.friction * self.dt)
         v_normal_new = -v_normal * self.elacticity 
         
-        # new velocity with x and y components
         new_vx = v_tangent_new * tangentx + v_normal_new * normalx
         new_vy = v_tangent_new * tangenty + v_normal_new * normaly
         
-        # set new velocity
         ball.setVel(Point(new_vx, new_vy))
    
     def collisionWithDynamicObject(self, ball1: Ball, ball2: Ball):
@@ -665,23 +625,18 @@ class Simulation(GraphWin):
 
         if self.frozen: return
         
-        # vector between centers of two balls
         dx = ball2.getPos().getX() - ball1.getPos().getX()
         dy = ball2.getPos().getY() - ball1.getPos().getY()
         
-        # distance between centers of balls in moment of a collision
         collision_distance = ball1.getSize() + ball2.getSize()
-
-        # if balls are too far stop collision resolving
         if abs(dx) > collision_distance or abs(dy) > collision_distance: return
+        
         distance =  np.sqrt(dx ** 2 + dy **2)
         if distance > collision_distance or distance == 0: return
         
-        # normal vector between two centers
         nx = dx / distance
         ny = dy / distance
         
-        #fix position
         correction = (collision_distance - distance) / 2
         
         #ball1 negative and ball2 positive because normal vector is from ball1 to ball2
@@ -691,14 +646,12 @@ class Simulation(GraphWin):
         rel_vx = ball1.getVel().getX() - ball2.getVel().getX()
         rel_vy = ball1.getVel().getY() - ball2.getVel().getY()
 
-        # symetric impluse for two balls
-        impulse = rel_vx * nx + rel_vy * ny
-        impulse *= 0.85
-        if impulse < 0: return
+        new_vel = rel_vx * nx + rel_vy * ny
+        new_vel *= 0.85
+        if new_vel < 0: return
 
-        # set new velocities
-        ball1.setVel(Point(ball1.vel.getX() - impulse * nx, ball1.vel.getY() - impulse * ny))
-        ball2.setVel(Point(ball2.vel.getX() + impulse * nx, ball2.vel.getY() + impulse * ny))
+        ball1.setVel(Point(ball1.vel.getX() - new_vel * nx, ball1.vel.getY() - new_vel * ny))
+        ball2.setVel(Point(ball2.vel.getX() + new_vel * nx, ball2.vel.getY() + new_vel * ny))
 
     def surfaceCollision(self, ball: Ball, surface: Surface3D):
         '''Imiatates a collision between a ball and 3D surface in 2D projection. Uses vector symmetric to a gradient of surface in a point
@@ -706,18 +659,14 @@ class Simulation(GraphWin):
         
         if self.frozen: return
         
-        # gradient vector
         vector = surface.getGradient(ball.getPos())
         
-        # amplifier
         a = 3
         
-        # acceleration vector
         vectorx = - vector.getX() * a
         vectory = - vector.getY() * a
         ball.setAcl(Point(vectorx, vectory))
         
-        # correct velocity according to friction
         vx = ball.getVel().getX() * (1 - self.friction * self.dt)
         vy = ball.getVel().getY() * (1 - self.friction * self.dt)
         
@@ -785,12 +734,10 @@ class TrajectoryRecorder:
               
             
     def save(self):
-        # file window to get location and name
         file_path = filedialog.asksaveasfilename(defaultextension=".txt")
 
         if not file_path: return
         
-        # write file
         with open(file_path, 'w') as file:
             local_time = time.localtime(self.t0)
             ms = int((self.t0 % 1) * 1000)
