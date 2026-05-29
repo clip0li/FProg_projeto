@@ -184,13 +184,15 @@ class InputDialog(GraphWin):
         height(int): height of window
         inputs(list(Name: str, min: int, max: int)): list of inputs. Each input is list that contains name and minimum and maximum value
         entries(list(Entry)): list of entries objects from graphics.py
+        values(list(str)): list of inicial values
         self.entries_width(int): width of entry box
     '''
     
-    def __init__(self, width: int, height: int, inputs=()):
+    def __init__(self, width: int, height: int, inputs=(), values = ()):
         self.width = width
         self.height = height
         self.inputs = inputs
+        self.values = values
         self.entries = []
         self.entries_width = 5
         
@@ -206,7 +208,7 @@ class InputDialog(GraphWin):
             
             entry = Entry(Point(2 * self.width / 3, (i + 1) * step), self.entries_width)
             entry.setFill('white')
-            entry.setText("0") 
+            entry.setText(values[i]) 
             self.entries.append(entry)
             entry.draw(self)
             
@@ -266,6 +268,7 @@ class InputDialog(GraphWin):
             if key != '':
                 for entry in self.entries:
                     entry.setTextColor('black')
+                
                     
 
 # ------------------------------------------------------------------------------------------------------------------------

@@ -13,10 +13,12 @@ def main():
         
         case '1':
             score_value = 0
-
+            inicial_values = (0,0,0)
+            
             while True:
-                dialog = InputDialog(250, 300, (('Velocity', 0, 20), ('Angle',0, 90), ('Height', 0, 7)))
+                dialog = InputDialog(250, 300, (('Velocity', 0, 20), ('Angle',0, 90), ('Height', 0, 7)), values=inicial_values)
                 values = dialog.getValues() 
+                inicial_values = values
                 if values is None: break 
                     
                 vel, angle, height = values
@@ -90,9 +92,12 @@ def main():
             main()    
                 
         case '2':
+            inicial_values = (0,)
+
             while True:
-                dialog = InputDialog(250, 300, (('Height',0, 6),))
+                dialog = InputDialog(250, 300, (('Height',0, 6),), values=inicial_values)
                 values = dialog.getValues() 
+                inicial_values = values
                 if values == None: break
                 
                 height = values[0]
@@ -144,12 +149,13 @@ def main():
         case '3':
             score_value = 0
             lives_value = 5
-            
             scored = False
+            inicial_values = (0,0)
             
             while lives_value > 0:
-                dialog = InputDialog(250, 300, (('Velocity',0, 15), ('Angle',0, 90)))
+                dialog = InputDialog(250, 300, (('Velocity',0, 15), ('Angle',0, 90)), values=inicial_values)
                 values = dialog.getValues() 
+                inicial_values = values
                 if values is None: break
                 
                 vel, angle = values
@@ -213,10 +219,6 @@ def main():
                         scenario3.close()
                         lives_value -= 1
                         scored = True
-                        
-                    if hoop.is_scored(ball2.getPos()):
-                        score_value += 1
-                        score.change(1)
                     
                     # win condition
                     if not scored and (ball1.getPos().getY() <= ball1.getSize() + 0.1) and \
