@@ -1,5 +1,5 @@
 '''
-istxxxxxxx, istxxxxxxx
+ist1118311, Oleksandr Pryshchepa e ist1118307, Eduardo Chinita
 File responsible of GUI related classes
 '''
 

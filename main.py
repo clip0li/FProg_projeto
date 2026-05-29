@@ -1,3 +1,6 @@
+'''
+ist1118311, Oleksandr Pryshchepa e ist1118307, Eduardo Chinita
+'''
 from graphics import *
 from gui import *
 from simulation import *
@@ -64,9 +67,9 @@ def main():
                         scored = True
 
                     # if ball touches floor
-                    if ball.getPos().getY() < ball.getSize() + 0.11: 
-                        scenario1.checkCollisions()
-                        scenario1.freeze()
+                    #if ball.getPos().getY() < ball.getSize() + 0.11: 
+                        #scenario1.checkCollisions()
+                        #scenario1.freeze()
                         
                         if key == 'g':
                             recorder.save()

@@ -1,5 +1,5 @@
 '''
-istxxxxxxx, istxxxxxxx
+ist1118311, Oleksandr Pryshchepa e ist1118307, Eduardo Chinita
 File responsible of anything related to simulation process, calcualtions and trajectory recording
 '''
 
@@ -190,7 +190,6 @@ class Hoop:
             return True
         
         return False
-
 
 # ------------------------------------------------------------------------------------------------------------------------
 
