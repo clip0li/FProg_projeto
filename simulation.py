@@ -120,6 +120,9 @@ class Hoop:
         self.p1 = Point(pos.getX() - self.width / 2 + self.size, pos.getY())
         self.p2 = Point(pos.getX() + self.width / 2 - self.size, pos.getY())
         
+    def getPos(self):
+        return self.pos
+        
     def draw(self, window: GraphWin):
         ring1 = Circle(self.p1, self.size)
         ring1.setFill(COLOR_HOOP)

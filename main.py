@@ -53,6 +53,8 @@ def main():
                 ball.setAcl(Point(0, -9.8))
                 
                 scored = False
+            
+                jumps = 0
                 
                 while scenario1.isOpen():
                     mouse = scenario1.checkMouse()
@@ -61,24 +63,22 @@ def main():
                     if mouse != None:
                         scenario1.checkQuitButton(mouse)
                         
-                    if hoop.is_scored(ball.getPos()) and not scored:
+                    if hoop.is_scored(ball.getPos()) and not scored and ball.getPos().getY() < hoop.getPos().getY():
                         score.change(2)
                         score_value += 2
                         scored = True
 
-                    # if ball touches floor
-                    #if ball.getPos().getY() < ball.getSize() + 0.11: 
-                        #scenario1.checkCollisions()
-                        #scenario1.freeze()
+                    if ball.getPos().getY() < ball.getSize() + 0.1: 
+                        jumps += 1
+                    
+                    if jumps >= 5:
+                        scenario1.checkCollisions()
+                        scenario1.freeze()
                         
                         if key == 'g':
                             recorder.save()
                             scenario1.close()
-                            
-                        if mouse != None:
-                            scenario1.close()
-                            break
-                        
+    
                     else:
                         recorder.record((ball,))
                         
@@ -164,7 +164,7 @@ def main():
                 scenario3.addStaticObject(score)
                 scenario3.addStaticObject(lives)
                 
-                surface = Surface2D(formula = lambda x: 0.25 * (x-5.1) ** 2 + 0.2,
+                surface = Surface2D(formula = lambda x: 0.25 * (x-5.1) ** 2 + 0.1,
                                     start = 0.1, end = 9)
                 scenario3.addStaticObject(surface)
                 
@@ -206,29 +206,30 @@ def main():
                     if mouse != None:  
                         if not scenario3.isFrozen():
                             ball2.defreeze()
-        
-                        # give score if succeded
-                        if scenario3.isFrozen() and not scored and ball1.getPos().getY() != 8:
-                            score_value += 1
-                            
+
                         scenario3.checkQuitButton(mouse)
                     
                     if hoop.is_scored(ball1.getPos()):
                         scenario3.close()
                         lives_value -= 1
                         scored = True
+                        
+                    if hoop.is_scored(ball2.getPos()):
+                        score_value += 1
+                        score.change(1)
                     
                     # win condition
-                    if not scored and (ball1.getSpeed() < 0.2 and ball1.getPos().getY() < 8) or \
-                                      (ball2.getSpeed() < 0.2 and ball2.getPos().getY() < 0.5):
-                                                                  
+                    if not scored and (ball1.getPos().getY() <= ball1.getSize() + 0.1) and \
+                                      (ball2.getPos().getY() <= ball2.getSize() + 0.1):
+                                          
+                        score.change(1)
+                        score_value += 1
                         scenario3.checkCollisions()
                         scenario3.freeze()
                         
                         if key == 'g':
                             recorder.save()
                             scenario3.close()
-                            
                     else:
                         recorder.record((ball1, ball2))
                         
